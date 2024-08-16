@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "src/TrustOrigin_backend"
+    "backend"
 ]
 resolver = "2"
