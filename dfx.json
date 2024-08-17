@@ -1,8 +1,8 @@
 {
   "canisters": {
-    "backend": {
+    "TrustOrigin_backend": {
       "candid": "backend/backend.did",
-      "package": "backend",
+      "package": "TrustOrigin_backend",
       "type": "rust"
     }
   },
