@@ -13,6 +13,7 @@ dependencies = [
  "lazy_static",
  "serde",
  "serde_derive",
+ "sha2",
  "time",
 ]
 
