@@ -13,4 +13,4 @@ This will be filled with information about what features are implemented. Should
 3. Run `dfx start --background`
 4. Run `dfx deploy`
 
-Your application should now running on Canister which run locally on purt  `4943`.
+Your application should now running on Canister which run locally on port  `4943`.
