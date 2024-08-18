@@ -1,0 +1,21 @@
+{
+    "engines": {
+        "node": ">=16.0.0",
+        "npm": ">=7.0.0",
+        "pnpm": ">=7.0.0"
+    },
+    "name": "trustorigin",
+    "scripts": {
+        "setup-declarations": "dfx generate TrustOrigin_backend",
+        "build": "pnpm run build --recursive",
+        "prebuild": "pnpm run prebuild --recursive",
+        "pretest": "pnpm run prebuild --recursive",
+        "start": "pnpm start --recursive",
+        "test": "pnpm test --recursive",
+        "prepare": "husky"
+    },
+    "type": "module",
+    "dependencies": {
+        "@dfinity/agent": "^2.0.0"
+    }
+}

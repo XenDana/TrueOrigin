@@ -4,6 +4,16 @@
       "candid": "backend/backend.did",
       "package": "TrustOrigin_backend",
       "type": "rust"
+    },
+    "TrustOrigin_frontend": {
+      "dependencies": [
+          "TrustOrigin_backend"
+      ],
+      "source": [
+          "src/frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "trustorigin"
     }
   },
   "defaults": {

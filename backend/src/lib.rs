@@ -81,3 +81,8 @@ fn updateOrganization(id: Principal, input: OrganizationInput) -> Option<Organiz
         None
     }
 }
+
+#[query]
+fn greet(name: String) -> String {
+    format!("Hello, {}!", name)
+}

@@ -1,10 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { TrustOrigin_backend } from '../../declarations/TrustOrigin_backend';
 
 function App() {
   const [count, setCount] = useState(0)
+  const [greeting, setGreeting] = useState('');
+
+  useEffect(() => {
+    const doGreeting = async () => {
+      const greet = await TrustOrigin_backend.greet('World')
+      console.log(greet);
+      setGreeting(greet);
+    };
+
+    doGreeting();
+  }, [])
 
   return (
     <>
@@ -28,6 +40,7 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <p>Greetings: "{greeting}"</p>
     </>
   )
 }
