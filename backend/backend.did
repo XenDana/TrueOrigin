@@ -20,8 +20,30 @@ type OrganizationInput = record {
     metadata: vec Metadata;
 };
 
+type Product = record {
+    id: principal;
+    name: text;
+    org_id: principal;
+    category: text;
+    description: text;
+    metadata: vec Metadata;
+    created_at: nat;
+    created_by: principal;
+    updated_at: nat;
+    updated_by: principal;
+};
+
+type ProductInput = record  {
+    name: text;
+    org_id: principal;
+    category: text;
+    description: text;
+    metadata: vec Metadata;
+};
+
 service : {
-    "get_organization_by_id": (id: principal) -> (opt Organization) query;
-    "create_organization": (input: OrganizationInput) -> (Organization);
-    "update_organization": (id: principal, input: OrganizationInput) -> (opt Organization);
+    "getOrganizationById": (id: principal) -> (opt Organization) query;
+    "createOrganization": (input: OrganizationInput) -> (Organization);
+    "updateOrganization": (id: principal, input: OrganizationInput) -> (Organization);
+    "createProduct": (input: ProductInput) -> (Product);
 };

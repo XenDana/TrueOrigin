@@ -83,3 +83,64 @@ fn update_organization(id: Principal, input: OrganizationInput) -> Option<Organi
         None
     }
 }
+
+#[derive(CandidType, Deserialize,  Clone)]
+struct Product {
+    id: Principal,
+    name: String,
+    org_id: Principal,
+    category: String,
+    description: String,
+    metadata: Vec<Metadata>,
+    created_at: Nat,
+    created_by: Principal,
+    updated_at: Nat,
+    updated_by: Principal,
+}
+
+#[derive(CandidType, Deserialize)]
+struct ProductInput {
+    name: String,
+    org_id: Principal,
+    category: String,
+    description: String,
+    metadata: Vec<Metadata>,
+}
+
+lazy_static! {
+    static ref PRODUCTS: Mutex<HashMap<Principal, Product>> = Mutex::new(HashMap::new());
+}
+
+impl Default for Product {
+    fn default() -> Self {
+        Product {
+            id: Principal::anonymous(),
+            name: String::new(),
+            org_id: Principal::anonymous(),
+            description: String::new(),
+            category: String::new(),
+            metadata: Vec::new(),
+            created_at: Nat::from(0 as u64), // Default value for Nat
+            created_by: Principal::anonymous(), // Default value for Principal
+            updated_at: Nat::from(0 as u64), // Default value for Nat
+            updated_by: Principal::anonymous(), // Default value for Principal
+        }
+    }
+}
+
+#[update]
+fn createProduct(input: ProductInput) -> Product {
+    let id = Principal::anonymous(); // Generate a unique ID for the
+    let product = Product {
+        id,
+        org_id: input.org_id,
+        name: input.name,
+        category: input.category,
+        description: input.description,
+        metadata: input.metadata,
+        ..Default::default()
+    };
+    let mut products = PRODUCTS.lock().unwrap();
+    products.insert(id, product.clone());
+    product
+}
