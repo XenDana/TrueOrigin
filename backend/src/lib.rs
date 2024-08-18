@@ -188,3 +188,4 @@ fn generate_unique_principal(principal: Principal) -> Principal {
 #[query]
 fn greet(name: String) -> String {
     format!("Hello, {}!", name)
+}

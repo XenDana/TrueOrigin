@@ -7,14 +7,17 @@
     "name": "trustorigin",
     "scripts": {
         "setup-declarations": "dfx generate TrustOrigin_backend",
-        "build": "pnpm run build --recursive",
-        "prebuild": "pnpm run prebuild --recursive",
-        "pretest": "pnpm run prebuild --recursive",
-        "start": "pnpm start --recursive",
-        "test": "pnpm test --recursive",
+        "build": "npm run build --workspaces --if-present",
+        "prebuild": "npm run prebuild --workspaces --if-present",
+        "pretest": "npm run prebuild --workspaces --if-present",
+        "start": "npm start --workspaces --if-present",
+        "test": "npm test --workspaces --if-present",
         "prepare": "husky"
     },
     "type": "module",
+    "workspaces": [
+        "src/frontend"
+    ],
     "dependencies": {
         "@dfinity/agent": "^2.0.0"
     }
