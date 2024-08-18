@@ -1,39 +1,8 @@
-use candid::{CandidType, Principal, Deserialize};
+use candid::{Principal};
 use ic_cdk::{api, query, update};
-use std::collections::HashMap;
-use std::sync::Mutex;
-use lazy_static::lazy_static;
-use ic_cdk::api::time;
-use sha2::{Sha256, Digest};
-
-#[derive(CandidType, Deserialize, Clone)]
-struct Metadata {
-    key: String,
-    value: String,
-}
-
-#[derive(CandidType, Deserialize,  Clone)]
-struct Organization {
-    id: Principal,
-    name: String,
-    description: String,
-    metadata: Vec<Metadata>,
-    created_at: u64,
-    created_by: Principal,
-    updated_at: u64,
-    updated_by: Principal,
-}
-
-#[derive(CandidType, Deserialize)]
-struct OrganizationInput {
-    name: String,
-    description: String,
-    metadata: Vec<Metadata>,
-}
-
-lazy_static! {
-    static ref ORGANIZATIONS: Mutex<HashMap<Principal, Organization>> = Mutex::new(HashMap::new());
-}
+use crate::global_state::{ORGANIZATIONS, PRODUCTS};
+use crate::models::{Organization, Product, OrganizationInput, ProductInput};
+use crate::utils::{generate_unique_principal};
 
 impl Default for Organization {
     fn default() -> Self {
@@ -84,33 +53,6 @@ fn update_organization(id: Principal, input: OrganizationInput) -> Option<Organi
     } else {
         None
     }
-}
-
-#[derive(CandidType, Deserialize,  Clone)]
-struct Product {
-    id: Principal,
-    name: String,
-    org_id: Principal,
-    category: String,
-    description: String,
-    metadata: Vec<Metadata>,
-    created_at: u64,
-    created_by: Principal,
-    updated_at: u64,
-    updated_by: Principal,
-}
-
-#[derive(CandidType, Deserialize)]
-struct ProductInput {
-    name: String,
-    org_id: Principal,
-    category: String,
-    description: String,
-    metadata: Vec<Metadata>,
-}
-
-lazy_static! {
-    static ref PRODUCTS: Mutex<HashMap<Principal, Product>> = Mutex::new(HashMap::new());
 }
 
 impl Default for Product {
@@ -170,22 +112,7 @@ fn update_product(id: Principal, input: ProductInput) -> Option<Product> {
     }
 }
 
-fn generate_unique_principal(principal: Principal) -> Principal {
-    // Combine the principal text and the current time
-    let input = format!("{}-{}", principal.to_text(), time());
-
-    // Hash the combined input using SHA-256
-    let mut hasher = Sha256::new();
-    hasher.update(input.as_bytes());
-    let result = hasher.finalize();
-
-    // Take the first 29 bytes of the hash and convert it into a Principal
-    let principal_bytes: [u8; 29] = result[0..29].try_into().expect("slice with incorrect length");
-
-    Principal::from_slice(&principal_bytes)
-}
-
 #[query]
-fn greet(name: String) -> String {
+pub fn greet(name: String) -> String {
     format!("Hello, {}!", name)
 }
