@@ -53,6 +53,9 @@ If you want to test your project locally, you can use the following commands:
 # Starts the replica, running in the background
 dfx start --background
 
+# install node dependencies
+pnpm install
+
 # Deploys your canisters to the replica and generates your candid interface
 dfx deploy
 ```
@@ -60,21 +63,27 @@ dfx deploy
 
 Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
 
+### Developing Backend
+
 If you have made changes to your backend canister, you can generate a new candid interface with
 
 ```bash
-npm run generate
+dfx generate TrustOrigin_backend
 ```
 
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
+This command will generate new `TrustOrigin_backend.did` file which are used by frontend to interact with backend.
 
-If you are making frontend changes, you can start a development server with
+### Developing Frontend
+
+If you are making frontend changes, you can start a development server with (by default, this won't be connected to the backend):
 
 ```bash
 npm start
 ```
 
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+Which will start a server at `http://localhost:8080`.
+
+To connect to the backend, you need to deploy your frontend changes with `dfx deploy` command. Or follow the instructions below to connect to the backend.
 
 ### Common issues
 if you get error like this

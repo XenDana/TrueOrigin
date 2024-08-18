@@ -1,0 +1,28 @@
+type Metadata = record {
+    key: text;
+    value: text;
+};
+
+type Organization = record {
+    id: principal;
+    name: text;
+    description: text;
+    metadata: vec Metadata;
+    created_at: nat;
+    created_by: principal;
+    updated_at: nat;
+    updated_by: principal;
+};
+
+type OrganizationInput = record {
+    name: text;
+    description: text;
+    metadata: vec Metadata;
+};
+
+service : {
+    "getOrganizationById": (id: principal) -> (opt Organization) query;
+    "createOrganization": (input: OrganizationInput) -> (Organization);
+    "updateOrganization": (id: principal, input: OrganizationInput) -> (Organization);
+    "greet" : (text) -> (text) query;
+};

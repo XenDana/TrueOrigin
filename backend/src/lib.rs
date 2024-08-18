@@ -184,3 +184,8 @@ fn generate_unique_principal(principal: Principal) -> Principal {
 
     Principal::from_slice(&principal_bytes)
 }
+
+#[query]
+fn greet(name: String) -> String {
+    format!("Hello, {}!", name)
+}

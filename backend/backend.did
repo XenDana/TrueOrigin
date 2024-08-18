@@ -48,4 +48,5 @@ service : {
     "create_product": (input: ProductInput) -> (Product);
     "get_product_by_id": (id: principal) -> (opt Product) query;
     "update_product": (id: principal, input: ProductInput) -> (Product);
+    "greet" : (text) -> (text) query;
 };
