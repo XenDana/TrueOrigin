@@ -41,6 +41,12 @@ dfx canister --help
 
 ## Running the project locally
 
+### Prerequisites
+- Rust
+- DFX
+- Node JS
+
+### Steps
 If you want to test your project locally, you can use the following commands:
 
 ```bash
@@ -53,6 +59,7 @@ pnpm install
 # Deploys your canisters to the replica and generates your candid interface
 dfx deploy
 ```
+
 
 Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
 
@@ -77,6 +84,17 @@ npm start
 Which will start a server at `http://localhost:8080`.
 
 To connect to the backend, you need to deploy your frontend changes with `dfx deploy` command. Or follow the instructions below to connect to the backend.
+
+### Common issues
+if you get error like this
+```sh
+error[E0463]: can't find crate for `core`
+  |
+  = note: the `wasm32-unknown-unknown` target may not be installed
+  = help: consider downloading the target with `rustup target add wasm32-unknown-unknown`
+```
+
+Run `rustup target add wasm32-unknown-unknown`
 
 ### Note on frontend environment variables
 
