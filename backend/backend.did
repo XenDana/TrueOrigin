@@ -27,9 +27,9 @@ type Product = record {
     category: text;
     description: text;
     metadata: vec Metadata;
-    created_at: nat;
+    created_at: u64;
     created_by: principal;
-    updated_at: nat;
+    updated_at: u64;
     updated_by: principal;
 };
 
@@ -46,4 +46,5 @@ service : {
     "createOrganization": (input: OrganizationInput) -> (Organization);
     "updateOrganization": (id: principal, input: OrganizationInput) -> (Organization);
     "createProduct": (input: ProductInput) -> (Product);
+    "getProductById": (id: principal) -> (opt Product) query;
 };

@@ -92,9 +92,9 @@ struct Product {
     category: String,
     description: String,
     metadata: Vec<Metadata>,
-    created_at: Nat,
+    created_at: u64,
     created_by: Principal,
-    updated_at: Nat,
+    updated_at: u64,
     updated_by: Principal,
 }
 
@@ -120,10 +120,10 @@ impl Default for Product {
             description: String::new(),
             category: String::new(),
             metadata: Vec::new(),
-            created_at: Nat::from(0 as u64), // Default value for Nat
-            created_by: Principal::anonymous(), // Default value for Principal
-            updated_at: Nat::from(0 as u64), // Default value for Nat
-            updated_by: Principal::anonymous(), // Default value for Principal
+            created_at: api::time(),
+            created_by: api::caller(), // Default value for Principal
+            updated_at: api::time(),
+            updated_by: api::caller(), // Default value for Principal
         }
     }
 }
@@ -143,4 +143,10 @@ fn createProduct(input: ProductInput) -> Product {
     let mut products = PRODUCTS.lock().unwrap();
     products.insert(id, product.clone());
     product
+}
+
+#[query]
+fn get_product_by_id(id: Principal) -> Option<Product> {
+    let products = PRODUCTS.lock().unwrap();
+    products.get(&id).cloned()
 }
