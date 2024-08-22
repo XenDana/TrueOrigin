@@ -7,8 +7,8 @@ use crate::error::GenericError;
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct Metadata {
-    key: String,
-    value: String,
+    pub key: String,
+    pub value: String,
 }
 
 impl fmt::Debug for Metadata {
@@ -104,4 +104,14 @@ pub struct UserDetailsInput {
 pub enum UserResult {
     User(Option<User>),
     Err(GenericError)
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct ProductReview {
+    pub id: Principal,
+    pub product_id: Principal,
+    pub score: u64,
+    pub review_description: String,
+    pub metadata: Vec<Metadata>,
+    pub created_at: u64,
 }
