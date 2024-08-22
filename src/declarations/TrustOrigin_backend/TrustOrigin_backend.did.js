@@ -177,6 +177,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(Reseller)],
         ['query'],
       ),
+    'generate_product_review' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(Product)],
+        [],
+      ),
     'generate_reseller_unique_code' : IDL.Func(
         [IDL.Principal],
         [UniqueCodeResult],

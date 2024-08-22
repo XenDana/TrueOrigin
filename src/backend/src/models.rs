@@ -179,6 +179,13 @@ pub struct ProductInput {
     pub metadata: Vec<Metadata>,
 }
 
+#[derive(CandidType, Deserialize, Clone, Copy, Debug)]
+pub enum UserRole {
+    Admin,
+    BrandOwner,
+    Reseller,
+}
+
 #[derive(CandidType, Deserialize, Clone)]
 pub struct ProductSerialNumber {
     pub product_id: Principal,
@@ -231,13 +238,6 @@ impl Default for ProductVerification {
             created_by: api::caller(), // Default value for Principal
         }
     }
-}
-
-#[derive(CandidType, Deserialize, Clone, Copy, Debug)]
-pub enum UserRole {
-    Admin,
-    BrandOwner,
-    Reseller,
 }
 
 #[derive(CandidType, Deserialize, Clone)]
