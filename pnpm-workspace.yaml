@@ -1,3 +1,4 @@
 packages:
   # include frontend package
   - 'src/frontend'
+  - 'src/user_frontend'

@@ -51,6 +51,7 @@ export const idlFactory = ({ IDL }) => {
     'created_at' : IDL.Nat64,
     'created_by' : IDL.Principal,
     'email' : IDL.Opt(IDL.Text),
+    'address' : IDL.Text,
     'first_name' : IDL.Opt(IDL.Text),
     'detail_meta' : IDL.Vec(Metadata),
     'last_name' : IDL.Opt(IDL.Text),
@@ -64,7 +65,12 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Opt(User),
     'error' : GenericError,
   });
+  const BalanceResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : IDL.Text });
+  const GetMyProfileResponse = IDL.Variant({ 'Ok' : User, 'Err' : IDL.Text });
+  const TransferArgs = IDL.Record({ 'amount' : IDL.Nat });
+  const Result = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : IDL.Text });
   return IDL.Service({
+    'canister_account' : IDL.Func([], [IDL.Vec(IDL.Nat8)], ['query']),
     'create_organization' : IDL.Func([OrganizationInput], [Organization], []),
     'create_product' : IDL.Func([ProductInput], [Product], []),
     'create_user' : IDL.Func(
@@ -72,6 +78,8 @@ export const idlFactory = ({ IDL }) => {
         [UserResult],
         [],
       ),
+    'get_balance' : IDL.Func([], [BalanceResult], []),
+    'get_my_profile' : IDL.Func([], [GetMyProfileResponse], ['query']),
     'get_organization_by_id' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(Organization)],
@@ -85,6 +93,8 @@ export const idlFactory = ({ IDL }) => {
     'get_user_by_id' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
     'greet' : IDL.Func([IDL.Text], [IDL.Text], ['query']),
     'register' : IDL.Func([], [User], []),
+    'save_my_profile' : IDL.Func([IDL.Text], [GetMyProfileResponse], []),
+    'transfer' : IDL.Func([TransferArgs], [Result], []),
     'update_organization' : IDL.Func(
         [IDL.Principal, OrganizationInput],
         [Organization],

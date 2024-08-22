@@ -1,7 +1,11 @@
 use std::fmt;
 
 use ic_cdk::api;
-use candid::{CandidType, Principal, Deserialize};
+use candid::{CandidType, Principal, Deserialize, Encode, Decode};
+use ic_stable_structures::{storable::Bound, Storable};
+use std::borrow::Cow;
+
+const MAX_VALUE_SIZE: u32 = 500;
 
 use crate::error::GenericError;
 
@@ -74,7 +78,7 @@ pub struct ProductInput {
     pub metadata: Vec<Metadata>,
 }
 
-#[derive(CandidType, Deserialize, Clone)]
+#[derive(CandidType, Deserialize, Clone,Debug)]
 pub struct User {
     pub id: Principal,
     pub is_principal: bool,
@@ -85,10 +89,26 @@ pub struct User {
     pub phone_no: Option<String>,
     pub email: Option<String>,
     pub detail_meta: Vec<Metadata>,
+    pub address: Option<String>, // eth wallet address
     pub created_at: u64,
     pub created_by: Principal,
     pub updated_at: u64,
     pub updated_by: Principal,
+}
+
+impl Storable for User {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: MAX_VALUE_SIZE,
+        is_fixed_size: false,
+    };
 }
 
 #[derive(CandidType, Deserialize)]
@@ -98,10 +118,19 @@ pub struct UserDetailsInput {
     pub phone_no: String,
     pub email: String,
     pub detail_meta: Vec<Metadata>,
+    pub address: Option<String>,
 }
 
 #[derive(CandidType, Deserialize)]
 pub enum UserResult {
     User(Option<User>),
     Err(GenericError)
+}
+
+
+
+#[derive(CandidType, Deserialize, Clone, Debug)]
+pub enum GetMyProfileResponse {
+    Ok(User),
+    Err(String),
 }

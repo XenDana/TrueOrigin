@@ -51,6 +51,7 @@ type User = record {
     phone_no: opt text;
     email: opt text;
     detail_meta: vec Metadata;
+    address: text;
     created_at: nat64;
     created_by: principal;
     updated_at: nat64;
@@ -75,6 +76,18 @@ type UserResult = variant {
     error: GenericError;
 };
 
+type GetMyProfileResponse = variant {
+  Ok : User;
+  Err : text;
+};
+
+type Result = variant { Ok : nat; Err : text };
+type BalanceResult = variant { Ok : nat; Err : text };
+type Tokens = record { e8s : nat64 };
+type TransferArgs = record {
+amount : nat
+};
+
 service : {
     "get_organization_by_id": (id: principal) -> (opt Organization) query;
     "create_organization": (input: OrganizationInput) -> (Organization);
@@ -90,4 +103,9 @@ service : {
     "update_user": (id: principal, input: UserDetailsInput) -> (UserResult);
     "update_user_orgs": (id: principal, org_ids: vec principal) -> (UserResult);
     "greet" : (text) -> (text) query;
+    "save_my_profile" : (text) -> (GetMyProfileResponse);
+    "get_my_profile" : () -> (GetMyProfileResponse) query;
+    "canister_account" : () -> (vec nat8) query;
+    "transfer" : (TransferArgs) -> (Result);
+    "get_balance" : () -> (BalanceResult);
 };

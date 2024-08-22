@@ -70,6 +70,7 @@ impl Default for User {
             last_name: None,
             phone_no: None,
             email: None,
+            address: None,
             detail_meta: Vec::new(),
             created_at: api::time(),
             created_by: api::caller(), // Default value for Principal
@@ -187,6 +188,7 @@ pub fn create_user(id: Principal, input: UserDetailsInput) -> UserResult {
         detail_meta: input.detail_meta,
         ..Default::default()
     };
+    ic_cdk::print(std::format!("User: {:?}", user.id.to_text()));
     
     users.insert(id, user.clone());
     UserResult::User(Some(user))

@@ -2,10 +2,14 @@ import type { Principal } from '@dfinity/principal';
 import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
+export type BalanceResult = { 'Ok' : bigint } |
+  { 'Err' : string };
 export interface GenericError {
   'message' : string,
   'details' : Array<Metadata>,
 }
+export type GetMyProfileResponse = { 'Ok' : User } |
+  { 'Err' : string };
 export interface Metadata { 'key' : string, 'value' : string }
 export interface Organization {
   'id' : Principal,
@@ -41,6 +45,10 @@ export interface ProductInput {
   'description' : string,
   'category' : string,
 }
+export type Result = { 'Ok' : bigint } |
+  { 'Err' : string };
+export interface Tokens { 'e8s' : bigint }
+export interface TransferArgs { 'amount' : bigint }
 export interface User {
   'id' : Principal,
   'updated_at' : bigint,
@@ -51,6 +59,7 @@ export interface User {
   'created_at' : bigint,
   'created_by' : Principal,
   'email' : [] | [string],
+  'address' : string,
   'first_name' : [] | [string],
   'detail_meta' : Array<Metadata>,
   'last_name' : [] | [string],
@@ -66,14 +75,19 @@ export interface UserDetailsInput {
 export type UserResult = { 'user' : [] | [User] } |
   { 'error' : GenericError };
 export interface _SERVICE {
+  'canister_account' : ActorMethod<[], Uint8Array | number[]>,
   'create_organization' : ActorMethod<[OrganizationInput], Organization>,
   'create_product' : ActorMethod<[ProductInput], Product>,
   'create_user' : ActorMethod<[Principal, UserDetailsInput], UserResult>,
+  'get_balance' : ActorMethod<[], BalanceResult>,
+  'get_my_profile' : ActorMethod<[], GetMyProfileResponse>,
   'get_organization_by_id' : ActorMethod<[Principal], [] | [Organization]>,
   'get_product_by_id' : ActorMethod<[Principal], [] | [Product]>,
   'get_user_by_id' : ActorMethod<[Principal], [] | [User]>,
   'greet' : ActorMethod<[string], string>,
   'register' : ActorMethod<[], User>,
+  'save_my_profile' : ActorMethod<[string], GetMyProfileResponse>,
+  'transfer' : ActorMethod<[TransferArgs], Result>,
   'update_organization' : ActorMethod<
     [Principal, OrganizationInput],
     Organization

@@ -16,6 +16,23 @@
       "type": "assets",
       "workspace": "trustorigin"
     },
+    "TrustOrigin_user_frontend": {
+      "dependencies": [
+          "TrustOrigin_backend",
+          "ic_siwe_provider",
+          "icrc1_ledger_canister"
+      ],
+      "source": [
+          "src/user_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "trustorigin"
+    },
+    "ic_siwe_provider": {
+      "candid": "https://github.com/kristoferlund/ic-siwe/releases/download/v0.0.6/ic_siwe_provider.did",
+      "type": "custom",
+      "wasm": "https://github.com/kristoferlund/ic-siwe/releases/download/v0.0.6/ic_siwe_provider.wasm.gz"
+    },
     "internet_identity": {
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
       "frontend": {},
@@ -26,6 +43,12 @@
       },
       "type": "custom",
       "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    },
+    "icrc1_ledger_canister": {
+      "type": "custom",
+      "candid": "https://raw.githubusercontent.com/dfinity/ic/d87954601e4b22972899e9957e800406a0a6b929/rs/rosetta-api/icrc1/ledger/ledger.did",
+      "wasm": "https://download.dfinity.systems/ic/d87954601e4b22972899e9957e800406a0a6b929/canisters/ic-icrc1-ledger.wasm.gz",
+      "specified_id": "mxzaz-hqaaa-aaaar-qaada-cai"
     }
   },
   "defaults": {

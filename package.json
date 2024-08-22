@@ -13,14 +13,16 @@
         "pretest": "npm run prebuild --workspaces --if-present",
         "start": "npm start --workspaces --if-present",
         "test": "npm test --workspaces --if-present",
-        "prepare": "husky"
+        "prepare": "husky",
+        "dev": "vite"
     },
     "type": "module",
     "workspaces": [
-        "src/frontend"
+        "src/frontend",
+        "src/user_frontend"
     ],
     "dependencies": {
-        "@dfinity/agent": "^2.0.0"
+        "@dfinity/agent": "1.0.1"
     },
     "devDependencies": {
         "husky": "^9.1.4"
