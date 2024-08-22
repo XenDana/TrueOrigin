@@ -1,4 +1,7 @@
+import { useNavigate } from "react-router-dom";
+
 function Homepage() {
+    const navigate = useNavigate();
   return (
     <>
         <div className="flex flex-col min-h-screen font-sans">
@@ -10,7 +13,7 @@ function Homepage() {
                         <a href="#" className="mr-4 text-gray-600">Pricing</a>
                         <a href="#" className="mr-4 text-gray-600">Resources</a>
                         <a href="#" className="mr-4 text-gray-600">Contact</a>
-                        <a href="#" className="mr-3 text-purple-600">Login</a>
+                        <a onClick={() => navigate('/auth/login')} className="mr-3 text-purple-600">Login</a>
                         <a href="#" className="bg-purple-600 text-white px-3 py-1 rounded-full">Start Free</a>
                     </div>
                 </nav>

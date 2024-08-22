@@ -1,6 +1,29 @@
-import techImage from '../assets/tech.png';
+import { useMemo } from 'react';
 
-function Dashboard() {
+import techImage from '../assets/tech.png';
+import { useAuthContext } from '../contexts/useAuthContext';
+import { useNavigate } from 'react-router-dom';
+
+const Dashboard = () => {
+    const navigate = useNavigate();
+    const { profile, isAuthenticated } = useAuthContext();
+
+    const username = useMemo(() => {
+        if (!profile) {
+            return 'Guest';
+        }
+        if (!profile.first_name) {
+            return `(NO NAME)`
+        }
+        return `${profile.first_name}${profile.last_name ? ' ' + profile.last_name : ''}`;
+    }, [profile]);
+
+
+    if (!isAuthenticated) {
+        navigate('/auth/login');
+        return <></>
+    }
+    
     return (
       <>
         <body className="bg-gray-100 font-sans">
@@ -32,7 +55,7 @@ function Dashboard() {
             <div className="absolute bottom-0 p-4 w-full flex items-center">
             <img className="w-10 h-10 rounded-full" src={techImage} alt="User Avatar" />
             <div className="ml-2">
-                <p className="text-gray-800">Amanda</p>
+                <p className="text-gray-800">{username}</p>
                 <a href="#" className="text-sm text-gray-500 hover:text-gray-800">View profile</a>
             </div>
             <button className="ml-auto text-gray-600 hover:text-gray-900">

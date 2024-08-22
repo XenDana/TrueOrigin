@@ -1,10 +1,26 @@
 use candid::Principal;
 use ic_cdk::{api, query, update};
-use crate::global_state::{ORGANIZATIONS, PRODUCTS, USERS};
-use crate::models::{Metadata, Organization, OrganizationInput, Product, ProductInput, User, UserDetailsInput, UserResult};
+use k256::{
+    ecdsa::{signature::{Signer, Verifier}, Signature, SigningKey, VerifyingKey}, elliptic_curve::sec1::ToEncodedPoint, EncodedPoint, SecretKey,
+    sha2::{Sha256, Digest}
+};
+use rand::{
+    rngs::StdRng,
+    SeedableRng,
+};
+
+use crate::{global_state::{ORGANIZATIONS, PRODUCTS, PRODUCT_SERIAL_NUMBERS, PRODUCT_VERIFICATIONS, RESELLERS, USERS}, models::{ResellerVerificationResultRecord, VerificationStatus}};
+use crate::models::{
+    Metadata,
+    Organization, OrganizationInput, OrganizationPublic, OrganizationResult, PrivateKeyResult,
+    Product, ProductInput, ProductResult, ProductSerialNumber, UniqueCodeResult, ProductSerialNumberResult,
+    ProductVerification, ProductVerificationStatus, ProductVerificationResult,
+    Reseller, ResellerInput, ResellerVerificationResult,
+    User, UserDetailsInput, UserResult, UserRole
+};
+use crate::auth::authorize_user_organization;
 use crate::utils::generate_unique_principal;
 use crate::error::GenericError;
-use regex::Regex;
 
 use ic_cdk::api::management_canister::http_request::{
     http_request, CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse, TransformArgs,
@@ -16,81 +32,98 @@ use serde_json::{self, Value};
 
 
 #[query]
-pub fn get_organization_by_id(id: Principal) -> Option<Organization> {
+pub fn get_organization_by_id(id: Principal) -> OrganizationResult {
     let organizations = ORGANIZATIONS.lock().unwrap();
-    organizations.get(&id).cloned()
+    match organizations.get(&id) {
+        Some(org) => OrganizationResult::Organization(OrganizationPublic::from(org.clone())),
+        None => OrganizationResult::Error(GenericError {
+            message: "Cannot find organization!".to_string(),
+            ..Default::default()
+        })
+    }
 }
 
 #[update]
-pub fn create_organization(input: OrganizationInput) -> Organization {
+pub fn create_organization(input: OrganizationInput) -> OrganizationPublic {
     let id = Principal::anonymous(); // Generate a unique ID for the organization
+    // Generate ECDSA keys for demonstration
+    let mut rng = StdRng::from_entropy();
+    let signing_key = SigningKey::random(&mut rng);
     let organization = Organization {
         id,
         name: input.name,
+        private_key: hex::encode(&signing_key.to_bytes()),
         description: input.description,
         metadata: input.metadata,
         ..Default::default()
     };
     let mut organizations = ORGANIZATIONS.lock().unwrap();
     organizations.insert(id, organization.clone());
-    organization
+    OrganizationPublic::from(organization)
 }
 
 #[update]
-pub fn update_organization(id: Principal, input: OrganizationInput) -> Option<Organization> {
+pub fn update_organization(id: Principal, input: OrganizationInput) -> OrganizationResult {
     let mut organizations = ORGANIZATIONS.lock().unwrap();
-    if let Some(org) = organizations.get_mut(&id) {
-        org.name = input.name;
-        org.description = input.description;
-        org.metadata = input.metadata;
-        org.updated_at = api::time();
-        org.updated_by = api::caller(); // Update with the current user
-        Some(org.clone())
-    } else {
-        None
+    match organizations.get_mut(&id) {
+        Some(org) => {
+            org.name = input.name;
+            org.description = input.description;
+            org.metadata = input.metadata;
+            org.updated_at = api::time();
+            org.updated_by = api::caller(); // Update with the current user
+            OrganizationResult::Organization(OrganizationPublic::from(org.clone()))
+        },
+        None => OrganizationResult::Error(GenericError {
+            message: "Organization not found!".to_string(),
+            ..Default::default()
+        })
     }
 }
 
-impl Default for Product {
-    fn default() -> Self {
-        Product {
-            id: Principal::anonymous(),
-            name: String::new(),
-            org_id: Principal::anonymous(),
-            description: String::new(),
-            category: String::new(),
-            metadata: Vec::new(),
-            created_at: api::time(),
-            created_by: api::caller(), // Default value for Principal
-            updated_at: api::time(),
-            updated_by: api::caller(), // Default value for Principal
-        }
+#[query]
+pub fn get_organization_private_key(org_id: Principal) -> PrivateKeyResult {
+    match authorize_user_organization(api::caller(), org_id) {
+        Ok(org) => PrivateKeyResult::Key(org.private_key),
+        Err(err) => PrivateKeyResult::Error(err)
     }
 }
 
-impl Default for User {
-    fn default() -> Self {
-        User {
-            id: api::caller(),
-            org_ids: Vec::new(),
-            is_principal: false,
-            is_enabled: true,
-            first_name: None,
-            last_name: None,
-            phone_no: None,
-            email: None,
-            detail_meta: Vec::new(),
-            created_at: api::time(),
-            created_by: api::caller(), // Default value for Principal
-            updated_at: api::time(),
-            updated_by: api::caller(), // Default value for Principal
-        }
-    }
+#[query]
+pub fn find_organizations_by_name(name: String) -> Vec<OrganizationPublic> {
+    let filter = name.trim().to_lowercase();
+    ORGANIZATIONS.lock().unwrap().values()
+        .filter(|org| org.name.to_lowercase().contains(&filter))
+        .map(|org| OrganizationPublic::from(org.clone()))
+        .collect()
 }
 
 #[update]
-pub fn create_product(input: ProductInput) -> Product {
-    let id = generate_unique_principal(Principal::anonymous()); // Generate a unique ID for the
+pub fn create_product(input: ProductInput) -> ProductResult {
+    let authorized = authorize_user_organization(api::caller(), input.org_id);
+    if authorized.is_err() {
+        return ProductResult::Err(authorized.err().unwrap());
+    }
+
+    let organization = authorized.ok().unwrap();
+    let id = generate_unique_principal(Principal::anonymous()); // Generate a unique ID for the product   
+    
+    let private_key_bytes = hex::decode(&organization.private_key); 
+    if private_key_bytes.is_err() {
+        return ProductResult::Err(GenericError {
+            message: private_key_bytes.err().unwrap().to_string(),
+            ..Default::default()
+        })
+    }
+    let private_key = SigningKey::from_slice(&private_key_bytes.unwrap().as_slice()); 
+    if private_key.is_err() {
+        return ProductResult::Err(GenericError {
+            message: private_key.err().unwrap().to_string(),
+            ..Default::default()
+        })
+    }
+    let private_key_unwrapped = private_key.unwrap();
+    let public_key = private_key_unwrapped.verifying_key();
     let product = Product {
         id,
         org_id: input.org_id,
@@ -98,39 +131,59 @@ pub fn create_product(input: ProductInput) -> Product {
         category: input.category,
         description: input.description,
         metadata: input.metadata,
+        public_key: hex::encode(public_key.to_encoded_point(false).as_bytes()),
         ..Default::default()
     };
     let mut products = PRODUCTS.lock().unwrap();
     products.insert(id, product.clone());
-    product
+    ProductResult::Product(product)
 }
 
 #[query]
-pub fn get_product_by_id(id: Principal) -> Option<Product> {
+pub fn list_products(org_id: Principal) -> Vec<Product> {
+    PRODUCTS.lock().unwrap().values()
+        .filter(|product| product.org_id == org_id)
+        .map(|product| product.clone())
+        .collect()
+}
+
+#[query]
+pub fn get_product_by_id(id: Principal) -> ProductResult {
     let products = PRODUCTS.lock().unwrap();
-    products.get(&id).cloned()
+    match products.get(&id) {
+        Some(product) => ProductResult::Product(product.clone()),
+        None => ProductResult::None
+    }
 }
 
 #[update]
-pub fn update_product(id: Principal, input: ProductInput) -> Option<Product> {
+pub fn update_product(id: Principal, input: ProductInput) -> ProductResult {
     let mut products = PRODUCTS.lock().unwrap();
-    if let Some(product) = products.get_mut(&id) {
-        product.org_id = input.org_id;
-        product.name = input.name;
-        product.description = input.description;
-        product.category = input.category;
-        product.metadata = input.metadata;
-        product.updated_at = api::time();
-        product.updated_by = api::caller(); // Update with the current user
-        Some(product.clone())
-    } else {
-        None
+    match products.get_mut(&id) {
+        Some(product) => {
+            product.org_id = input.org_id;
+            product.name = input.name;
+            product.description = input.description;
+            product.category = input.category;
+            product.metadata = input.metadata;
+            product.updated_at = api::time();
+            product.updated_by = api::caller(); // Update with the current user
+            ProductResult::Product(product.clone())
+        },
+        None => ProductResult::Err(GenericError {
+            message: "Invalid product!".to_string(),
+            ..Default::default()
+        })
     }
 }
 
 #[update]
 pub fn register() -> User {
     let mut users = USERS.lock().unwrap();
+    let existing_user = users.get_mut(&api::caller());
+    if existing_user.is_some() {
+        return existing_user.unwrap().clone();
+    }
     let user = User {
         id: api::caller(),
         is_principal: users.is_empty(),
@@ -164,7 +217,7 @@ pub fn update_self_details(input: UserDetailsInput) -> UserResult {
         user.detail_meta = input.detail_meta;
         user.updated_at = api::time();
         user.updated_by = api::caller(); // Update with the current user
-        UserResult::User(Some(user.clone()))
+        UserResult::User(user.clone())
     } else {
         UserResult::Err(GenericError {
             message: "User not exist!".to_string(),
@@ -172,6 +225,126 @@ pub fn update_self_details(input: UserDetailsInput) -> UserResult {
         })
     }
 }
+
+
+// DEBUG ONLY
+#[update]
+pub fn set_self_role(role: UserRole) -> UserResult {
+    let mut users = USERS.lock().unwrap();
+    if let Some(user) = users.get_mut(&api::caller()) {
+        user.user_role = Some(role);
+        user.updated_at = api::time();
+        user.updated_by = api::caller(); // Update with the current user
+        UserResult::User(user.clone())
+    } else {
+        UserResult::Err(GenericError {
+            message: "User not exist!".to_string(),
+            ..GenericError::default()
+        })
+    }
+}
+
+#[update]
+pub fn register_as_organization(input: OrganizationInput) -> UserResult {
+    let mut users = USERS.lock().unwrap();
+    let user = users.get_mut(&api::caller());
+    if user.is_none() {
+        return UserResult::Err(GenericError {
+            message: "User not exist!".to_string(),
+            ..GenericError::default()
+        })
+    }
+    let user_mut = user.unwrap();
+    if user_mut.user_role.is_some() {
+        return UserResult::Err(GenericError {
+            message: "User already has assigned role!".to_string(),
+            ..GenericError::default()
+        })
+    }
+
+    let mut rng = StdRng::from_entropy();
+    let signing_key = SigningKey::random(&mut rng);
+    let signing_key_str = hex::encode(&signing_key.to_bytes());
+
+    user_mut.user_role = Some(UserRole::Reseller);
+    user_mut.updated_at = api::time();
+    user_mut.updated_by = api::caller();
+
+    let organization = Organization {
+        name: input.name,
+        description: input.description,
+        metadata: input.metadata,
+        private_key: signing_key_str,
+        ..Default::default()
+    };
+    let mut organizations = ORGANIZATIONS.lock().unwrap();
+    organizations.insert(organization.id, organization);
+    UserResult::User(user_mut.clone())
+}
+
+
+#[update]
+pub fn register_as_reseller(input: ResellerInput) -> UserResult {
+    let mut users = USERS.lock().unwrap();
+    let user = users.get_mut(&api::caller());
+    if user.is_none() {
+        return UserResult::Err(GenericError {
+            message: "User not exist!".to_string(),
+            ..GenericError::default()
+        })
+    }
+    let user_mut = user.unwrap();
+    if user_mut.user_role.is_some() {
+        return UserResult::Err(GenericError {
+            message: "User already has assigned role!".to_string(),
+            ..GenericError::default()
+        })
+    }
+    let organizations = ORGANIZATIONS.lock().unwrap();
+    let organization = organizations.get(&input.org_id);
+    if organization.is_none() {
+        return UserResult::Err(GenericError {
+            message: "Organization not found!".to_string(),
+            ..GenericError::default()
+        })
+    }
+
+    let private_key_bytes = hex::decode(&organization.unwrap().private_key);
+    if private_key_bytes.is_err() {
+        return UserResult::Err(GenericError {
+            message: "Malformed secret key for organization!".to_string(),
+            ..GenericError::default()
+        })
+    }
+    let private_key = SecretKey::from_slice(&private_key_bytes.unwrap().as_slice());
+    if private_key.is_err() {
+        return UserResult::Err(GenericError {
+            message: "Malformed secret key for organization!".to_string(),
+            ..GenericError::default()
+        })
+    }
+    let public_key = private_key.unwrap().public_key();
+    let reseller_id = Principal::anonymous();
+
+    user_mut.user_role = Some(UserRole::Reseller);
+    user_mut.updated_at = api::time();
+    user_mut.updated_by = api::caller();
+
+    let mut resellers = RESELLERS.lock().unwrap();
+    let reseller = Reseller {
+        id: reseller_id,
+        org_id: input.org_id,
+        name: input.name,
+        ecommerce_urls: input.ecommerce_urls,
+        metadata: input.metadata,
+        public_key: hex::encode(public_key.to_encoded_point(false).as_bytes()),
+        ..Default::default()
+    };
+    resellers.insert(reseller_id, reseller);
+    UserResult::User(user_mut.clone())
+}
+
+
 
 #[update]
 pub fn create_user(id: Principal, input: UserDetailsInput) -> UserResult {
@@ -198,7 +371,7 @@ pub fn create_user(id: Principal, input: UserDetailsInput) -> UserResult {
     };
     
     users.insert(id, user.clone());
-    UserResult::User(Some(user))
+    UserResult::User(user)
 }
 
 #[update]
@@ -213,7 +386,7 @@ pub fn update_user(id: Principal, input: UserDetailsInput) -> UserResult {
         user.detail_meta = input.detail_meta;
         user.updated_at = api::time();
         user.updated_by = api::caller(); // Update with the current user
-        UserResult::User(Some(user.clone()))
+        UserResult::User(user.clone())
     } else {
         UserResult::Err(GenericError {
             message: "User not found!".to_string(),
@@ -228,7 +401,7 @@ pub fn update_user_orgs(id: Principal, org_ids: Vec<Principal>) -> UserResult {
     let mut users = USERS.lock().unwrap();
     if let Some(user) = users.get_mut(&id) {
         user.org_ids = org_ids;
-        UserResult::User(Some(user.clone()))
+        UserResult::User(user.clone())
     } else {
         UserResult::Err(GenericError {
             message: "User not found!".to_string(),
@@ -433,4 +606,492 @@ fn transform(raw: TransformArgs) -> HttpResponse {
         ic_cdk::api::print(format!("Received an error: err = {:?}", raw));
     }
     res
+}
+#[query]
+pub fn find_resellers_by_name_or_id(name: String) -> Vec<Reseller> {
+    let filter = name.trim().to_lowercase();
+
+    RESELLERS.lock().unwrap().values()
+        .filter(|reseller| reseller.name.to_lowercase().contains(&filter))
+        .map(|reseller| reseller.clone())
+        .collect()
+}
+
+#[query]
+pub fn verify_reseller(reseller_id: Principal, unique_code: String) -> ResellerVerificationResult {
+    let resellers = RESELLERS.lock().unwrap();
+    let reseller = resellers.get(&reseller_id);
+    if reseller.is_none() {
+        return ResellerVerificationResult::Error(GenericError { 
+            message: "Reseller does not exist!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    let organizations = ORGANIZATIONS.lock().unwrap();
+    let organization = organizations.get(&reseller.unwrap().org_id);
+    if organization.is_none() {
+        return ResellerVerificationResult::Error(GenericError { 
+            message: "Organization does not exist!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    // deserialize public_key
+    let public_key_bytes = hex::decode(&reseller.unwrap().public_key);
+    if public_key_bytes.is_err() {
+        return ResellerVerificationResult::Error(GenericError { 
+            message: "Malformed public key!".to_string(),
+            ..Default::default()
+        })
+    }
+    let public_key_encoded_point = EncodedPoint::from_bytes(public_key_bytes.unwrap());
+    if public_key_encoded_point.is_err() {
+        return ResellerVerificationResult::Error(GenericError { 
+            message: "Malformed public key!".to_string(),
+            ..Default::default()
+        })
+    }
+    let public_key = VerifyingKey::from_encoded_point(&public_key_encoded_point.unwrap());
+    if public_key.is_err() {
+        return ResellerVerificationResult::Error(GenericError { 
+            message: "Malformed public key!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    // hashed message is the reseller_id
+    let mut hasher = Sha256::new();
+    hasher.update(reseller_id.to_string());
+    let hashed_message = hasher.finalize();
+
+    let decoded_code = hex::decode(&unique_code);
+    if decoded_code.is_err() {
+        return ResellerVerificationResult::Error(GenericError { 
+            message: "Malformed code!".to_string(),
+            ..Default::default()
+        })
+    }
+    let signature = Signature::from_slice(decoded_code.unwrap().as_slice()).unwrap();
+
+    let match_result = match public_key.unwrap().verify(&hashed_message, &signature) {
+        Ok(_) => ResellerVerificationResultRecord {
+            status: VerificationStatus::Success,
+            organization: OrganizationPublic::from(organization.unwrap().clone()),
+            registered_at: Some(reseller.unwrap().date_joined),
+        },
+        Err(_) => ResellerVerificationResultRecord {
+            status: VerificationStatus::Invalid,
+            organization: OrganizationPublic::from(organization.unwrap().clone()),
+            registered_at: None,
+        },
+    };
+    ResellerVerificationResult::Result(match_result)
+}
+
+#[query]
+pub fn generate_reseller_unique_code(reseller_id: Principal) -> UniqueCodeResult {
+    let resellers = RESELLERS.lock().unwrap();
+    let reseller = resellers.get(&reseller_id);
+    if reseller.is_none() {
+        return UniqueCodeResult::Error(GenericError { 
+            message: "Reseller does not exist!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    // verification
+    let organizations = ORGANIZATIONS.lock().unwrap();
+    let organization = organizations.get(&reseller.unwrap().org_id);
+    if organization.is_none() {
+        return UniqueCodeResult::Error(GenericError { 
+            message: "Organization does not exist!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    // deserialize to 
+    let private_key_bytes = hex::decode(&organization.unwrap().private_key);
+    if private_key_bytes.is_err() {
+        return UniqueCodeResult::Error(GenericError {
+            message: "Malformed secret key for organization!".to_string(),
+            ..GenericError::default()
+        })
+    }
+    let private_key = SigningKey::from_slice(&private_key_bytes.unwrap().as_slice()); 
+    if private_key.is_err() {
+        return UniqueCodeResult::Error(GenericError {
+            message: "Malformed secret key for organization!".to_string(),
+            ..GenericError::default()
+        })
+    }
+
+    // hash and sign. the sign will be used to provide unique_code of the reseller
+    let mut hasher = Sha256::new();
+    hasher.update(reseller_id.to_string());
+    let hashed_message = hasher.finalize();
+    
+    let signature: Signature = private_key.unwrap().sign(&hashed_message);
+    UniqueCodeResult::UniqueCode(signature.to_string())
+
+}
+
+
+#[query]
+pub fn list_product_serial_number(organization_id: Principal, product_id: Option<Principal>) -> Vec<ProductSerialNumber> {
+    let serial_numbers = PRODUCT_SERIAL_NUMBERS.lock().unwrap();
+    let products = PRODUCTS.lock().unwrap();
+    if product_id.is_none() {
+        // search all available for orgs
+        let mut filtered_serial_numbers: Vec<ProductSerialNumber> = Vec::new();
+        let product_ids: Vec<Principal> = products.clone().into_values()
+            .filter(|p| p.org_id == organization_id)
+            .map(|p| p.id)
+            .collect();
+        product_ids.into_iter().for_each(|p_id| {
+            if let Some(product_sn) = serial_numbers.get(&p_id) {
+                product_sn.into_iter().for_each(|p_sn| filtered_serial_numbers.push(p_sn.clone()))
+            }
+        });
+        
+        return filtered_serial_numbers
+    }
+
+    // verify if the product is from the org
+    if !products.contains_key(&product_id.unwrap()) {
+        return Vec::new();
+    }
+    let product = products.get(&product_id.unwrap()).unwrap();
+    if product.org_id != organization_id {
+        return Vec::new();
+    }
+    
+    match serial_numbers.get(&product_id.unwrap()) {
+        Some(sn) => sn.clone(),
+        None => Vec::new()
+    }
+}
+
+#[update]
+pub fn create_product_serial_number(product_id: Principal, user_serial_no: Option<String>) -> ProductSerialNumberResult {
+    let mut product_serial_nos = PRODUCT_SERIAL_NUMBERS.lock().unwrap();
+    let mut product_sn_vec: Vec<ProductSerialNumber>;
+    match product_serial_nos.get_mut(&product_id) {
+        Some(vec) => {
+            product_sn_vec = vec.to_vec();
+        },
+        None => {
+            product_sn_vec = Vec::new();
+        }
+    }
+    match user_serial_no {
+        Some(serial_no) => {
+            if product_sn_vec.clone().into_iter().any(|p_sn| p_sn.user_serial_no == serial_no) {
+                return ProductSerialNumberResult::Error(GenericError {
+                    message: "Existing user serial number already exists!".to_string(),
+                    ..Default::default()
+                })
+            }
+        },
+        None => {
+            
+        }
+    }
+    let product_sn = ProductSerialNumber {
+        product_id: product_id,
+        ..Default::default()
+    }; 
+    product_sn_vec.push(product_sn.clone());
+    ProductSerialNumberResult::Result(product_sn)
+}
+
+#[update]
+pub fn update_product_serial_number(product_id: Principal, serial_no: Principal, user_serial_no: Option<String>) -> ProductSerialNumberResult {
+    let mut product_serial_nos = PRODUCT_SERIAL_NUMBERS.lock().unwrap();
+    let product_sn_vec = product_serial_nos.get_mut(&product_id);
+    if product_sn_vec.is_none() {
+        return ProductSerialNumberResult::Error(GenericError {
+            message: "No serial number for product exist!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    let product_sn_vec_mut = product_sn_vec.unwrap();
+    let product_sn = product_sn_vec_mut.clone().into_iter().find(|psn| psn.serial_no == serial_no);
+    if product_sn.is_none() {
+        return ProductSerialNumberResult::Error(GenericError {
+            message: "No serial number for product exist!".to_string(),
+            ..Default::default()
+        })
+    }
+    let mut product_sn_ref = product_sn.unwrap();
+    match user_serial_no {
+        Some(u_serial_no) => {
+            if product_sn_vec_mut.clone().into_iter().any(|p_sn| p_sn.serial_no != serial_no && p_sn.user_serial_no == u_serial_no) {
+                return ProductSerialNumberResult::Error(GenericError {
+                    message: "Existing user serial number already exists".to_string(),
+                    ..Default::default()
+                })
+            }
+            product_sn_ref.user_serial_no = u_serial_no;
+        },
+        None => {
+            
+        }
+    }
+    
+    ProductSerialNumberResult::Result(product_sn_ref.clone())
+}
+
+#[update]
+pub fn print_product_serial_number(product_id: Principal, serial_no: Principal) -> UniqueCodeResult {
+    // unique_code is
+    let mut binding = PRODUCT_SERIAL_NUMBERS.lock().unwrap();
+    let product_sn = binding.get_mut(&product_id);
+    if product_sn.is_none() {
+        return UniqueCodeResult::Error(GenericError { 
+            message: "Product has no serial number recorded!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    let product_sn_ref = product_sn.unwrap().iter_mut().find(|sn| sn.serial_no == serial_no);
+    if product_sn_ref.is_none() {
+        return UniqueCodeResult::Error(GenericError { 
+            message: "Serial number for product is not present!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    let products = PRODUCTS.lock().unwrap();
+    let product = products.get(&product_id);
+    if product.is_none() {
+        return UniqueCodeResult::Error(GenericError { 
+            message: "Product reference does not exist!".to_string(),
+            ..Default::default()
+        })
+    }
+    let organizations = ORGANIZATIONS.lock().unwrap();
+    let organization = organizations.get(&product.unwrap().org_id);
+    if organization.is_none() {
+        return UniqueCodeResult::Error(GenericError { 
+            message: "Organization does not exist!".to_string(),
+            ..Default::default()
+        })
+    }
+    // deserialize to 
+    let private_key_bytes = hex::decode(&organization.unwrap().private_key);
+    if private_key_bytes.is_err() {
+        return UniqueCodeResult::Error(GenericError {
+            message: "Malformed secret key for organization!".to_string(),
+            ..GenericError::default()
+        })
+    }
+    let private_key = SigningKey::from_slice(&private_key_bytes.unwrap().as_slice()); 
+    if private_key.is_err() {
+        return UniqueCodeResult::Error(GenericError {
+            message: "Malformed secret key for organization!".to_string(),
+            ..GenericError::default()
+        })
+    }
+
+
+    let sn_ref = product_sn_ref.unwrap();
+    sn_ref.print_version += 1;
+
+    // unique code: create a signed message for the product, using the public key
+    // message contents will be
+    // {serial_no}_{product_id}_{print_version}
+    let msg = format!("{}_{}_{}", product_id.to_string(), serial_no.to_string(), sn_ref.print_version);
+    let mut hasher = Sha256::new();
+    hasher.update(msg);
+    let hashed_message = hasher.finalize();
+    
+    let signature: Signature = private_key.unwrap().sign(&hashed_message);
+    UniqueCodeResult::UniqueCode(signature.to_string())
+}
+
+#[update]
+pub fn verify_product(
+    product_id: Principal,
+    serial_no: Principal,
+    print_version: u8,
+    unique_code: String,
+    metadata: Vec<Metadata>
+) -> ProductVerificationResult {
+    let products = PRODUCTS.lock().unwrap();
+    if !products.contains_key(&product_id) {
+        return ProductVerificationResult::Error(GenericError { 
+            message: "Product is invalid!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    // check parameters validity
+    let product = products.get(&product_id).unwrap();
+    let product_serial_numbers = PRODUCT_SERIAL_NUMBERS.lock().unwrap();
+    if !product_serial_numbers.contains_key(&product_id) {
+        return ProductVerificationResult::Error(GenericError { 
+            message: "Product has no such serial number!".to_string(),
+            ..Default::default()
+        })
+    }
+    let product_sn = product_serial_numbers.get(&product_id).unwrap()
+        .into_iter()
+        .find(|p_sn| p_sn.serial_no == serial_no);
+    if product_sn.is_none() {
+        return ProductVerificationResult::Error(GenericError { 
+            message: "Serial number is not found!".to_string(),
+            ..Default::default()
+        })
+    }
+    if product_sn.unwrap().print_version != print_version {
+        return ProductVerificationResult::Error(GenericError { 
+            message: "Unique code expired!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    // deserialize public_key
+    let public_key_bytes = hex::decode(&product.public_key);
+    if public_key_bytes.is_err() {
+        return ProductVerificationResult::Error(GenericError { 
+            message: "Malformed public key!".to_string(),
+            ..Default::default()
+        })
+    }
+    let public_key_encoded_point = EncodedPoint::from_bytes(public_key_bytes.unwrap());
+    if public_key_encoded_point.is_err() {
+        return ProductVerificationResult::Error(GenericError { 
+            message: "Malformed public key!".to_string(),
+            ..Default::default()
+        })
+    }
+    let public_key = VerifyingKey::from_encoded_point(&public_key_encoded_point.unwrap());
+    if public_key.is_err() {
+        return ProductVerificationResult::Error(GenericError { 
+            message: "Malformed public key!".to_string(),
+            ..Default::default()
+        })
+    }
+
+    // parameters valid. check unique code
+    // unique code: create a signed message for the product, using the public key
+    // message contents will be
+    // {serial_no}_{product_id}_{print_version}
+    let msg = format!("{}_{}_{}", product_id.to_string(), serial_no.to_string(), print_version);
+    let mut hasher = Sha256::new();
+    hasher.update(msg);
+    let hashed_message = hasher.finalize();
+
+    let decoded_code = hex::decode(&unique_code);
+    if decoded_code.is_err() {
+        return ProductVerificationResult::Error(GenericError { 
+            message: "Malformed code!".to_string(),
+            ..Default::default()
+        })
+    }
+    let signature = Signature::from_slice(decoded_code.unwrap().as_slice()).unwrap();
+    
+    let verify_result = public_key.unwrap().verify(&hashed_message, &signature);
+    if verify_result.is_err() {
+        return ProductVerificationResult::Status(ProductVerificationStatus::Invalid);
+    }
+
+    // unique code valid. record the validation result
+    let mut result = ProductVerificationStatus::FirstVerification;
+    let mut product_verifications = PRODUCT_VERIFICATIONS.lock().unwrap();
+    let mut verifications: Vec<ProductVerification>;
+    if product_verifications.contains_key(&product_id) {
+        // add verification
+        verifications = product_verifications.get_mut(&product_id).unwrap().to_vec();
+    } else {
+        verifications = Vec::new();
+    }
+    if verifications.clone().into_iter().any(|h| h.serial_no == serial_no) {
+        result = ProductVerificationStatus::MultipleVerification;
+    }
+    let verification = ProductVerification {
+        metadata: metadata,
+        ..Default::default()
+    };
+    verifications.push(verification);
+    ProductVerificationResult::Status(result)
+}
+
+#[query]
+pub fn list_product_verifications(
+    organization_id: Principal,
+    product_id: Option<Principal>,
+    serial_number: Option<Principal>
+) -> Vec<ProductVerification> {
+    let verifications = PRODUCT_VERIFICATIONS.lock().unwrap();
+    let products = PRODUCTS.lock().unwrap();
+    if product_id.is_none() {
+        let mut filtered_verifications: Vec<ProductVerification> = Vec::new();
+        let product_ids: Vec<Principal> = products.clone().into_values()
+            .filter(|p| p.org_id == organization_id)
+            .map(|p| p.clone().id)
+            .collect();
+        product_ids.into_iter().for_each(|p_id| {
+            if let Some(product_sn) = verifications.get(&p_id) {
+                product_sn.into_iter().for_each(|p_sn| filtered_verifications.push(p_sn.clone()))
+            }
+        });
+        
+        return filtered_verifications
+    }
+
+    // verify if the product is from the org
+    if !products.contains_key(&product_id.unwrap()) {
+        return Vec::new();
+    }
+    let product = products.get(&product_id.unwrap()).unwrap();
+    if product.org_id != organization_id {
+        return Vec::new();
+    }
+    if !verifications.contains_key(&product_id.unwrap()) {
+        return Vec::new();
+    }
+
+    let product_verifications = verifications.get(&product_id.unwrap()).unwrap().clone();
+    match serial_number {
+        Some(sn) => product_verifications.into_iter().filter(|pv| pv.serial_no == sn).collect(),
+        None => product_verifications
+    }
+
+}
+
+#[query]
+pub fn list_product_verifications_by_user(user_id: Principal, organization_id: Option<Principal>) -> Vec<ProductVerification> {
+    let verifications = PRODUCT_VERIFICATIONS.lock().unwrap();
+    let mut filtered_verifications: Vec<ProductVerification> = Vec::new();
+    match organization_id {
+        Some(org_id) => {
+            let products = PRODUCTS.lock().unwrap();
+            let product_ids: Vec<Principal> = products.clone().into_values()
+                .filter(|p| p.org_id == org_id)
+                .map(|p| p.id)
+                .collect();
+            product_ids.into_iter().for_each(|p_id| {
+                if let Some(pv) = verifications.get(&p_id) {
+                    pv.into_iter().for_each(|v| {
+                        if v.created_by == user_id {
+                            filtered_verifications.push(v.clone())
+                        }
+                    })
+                }
+            })
+        },
+        None => {
+            verifications.clone().into_values().for_each(|pv| {
+                pv.into_iter().for_each(|v| {
+                    if v.created_by == user_id {
+                        filtered_verifications.push(v)
+                    }
+                })
+            });
+        }
+    }
+    filtered_verifications
 }
