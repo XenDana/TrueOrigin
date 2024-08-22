@@ -11,6 +11,7 @@ import party2 from "../assets/party-2.png"
 import party3 from "../assets/party-3.png"
 import icInfra from "../assets/ic-infra.png"
 import eCoin from "../assets/e-coin.png"
+import cFusion from "../assets/chain-fusion@2x.png"
 import LandingCard from "../components/LandingCard"
 
 
@@ -124,7 +125,7 @@ function Homepage() {
                     <div className="px-6 lg:px-44 md:px-20 mb-10 md:mb-20">
                         <div className="bg-white rounded-[30px] flex flex-col md:flex-row justify-between">
                             <div className="flex flex-col gap-4 md:gap-8 px-6 md:px-20 py-6 md:py-10">
-                                <p className="text-2xl md:text-4xl font-lexend">Validate QR to <br /> get bitcoin now!</p>
+                                <p className="text-2xl md:text-4xl font-lexend">Validate QR to <br /> get ICP / ETH now!</p>
                                 <ol className="list-decimal pl-4 text-sm md:text-base">
                                     <li>Scan QR Code to validate</li>
                                     <li>Open Telegram wallet and get coin address</li>
@@ -149,7 +150,7 @@ function Homepage() {
                         <div className="bg-[#FFB73B] rounded-[30px] flex flex-col md:flex-row justify-between">
                             <div className="px-6 md:px-20 py-6 md:py-10 w-full md:w-2/3">
                                 <div className="flex flex-col gap-2">
-                                    <p className="text-2xl md:text-4xl font-semibold font-lexend">Building on Trust</p>
+                                    <p className="text-2xl md:text-4xl font-semibold font-lexend">Safeguarding on <span className="text-[#2C42C0]">TrueOrigin</span></p>
                                     <p className="text-sm md:text-base">We know that working together as a community is better for everyone. Our platform enables blockchain developers to build their Apps and wallets natively and connect with millions of users, without having to worry about the low-level implementation details.</p>
                                 </div>
                                 <div className="mt-6 md:mt-10">
@@ -170,7 +171,7 @@ function Homepage() {
                 </section>
                 <hr></hr>
                 <section className="flex flex-col lg:flex-row justify-between gap-8 lg:px-44 px-5 py-20">
-                    <div className="flex flex-col bg-[#1A1A1A] basis-1/2 rounded-[30px] justify-between">
+                    <div className="flex flex-col bg-[#1A1A1A] basis-1/2 rounded-[30px] justify-between items-end">
                         <div className="flex flex-col gap-4 lg:p-20 p-10">
                             <p className="text-4xl text-white font-lexend">ICP</p>
                             <p className="text-white">Fully built on the ICP platform, ECDSA enhances security for digital certification beyond existing solutions. Additionally, low latency and low storage costs are highly suitable for big data processing, leading to significant cost savings.</p>
@@ -178,11 +179,11 @@ function Homepage() {
                                 <a className="bg-gradient-to-r from-[#3B00B9] to-[#29ABE2] px-5 py-3 rounded-[10px] text-white font-lexend hover:cursor-pointer">ICP INFRASTRUCTURE</a>
                             </div>
                         </div>
-                        <div>
+                        <div className="max-w-[500px]">
                             <img src={icInfra} />
                         </div>
                     </div>
-                    <div className="flex flex-col gap-4 bg-[#1A1A1A] basis-1/2 rounded-[30px] justify-between">
+                    <div className="flex flex-col gap-4 bg-[#1A1A1A] basis-1/2 rounded-[30px] justify-between items-end">
                         <div className="flex flex-col gap-4 lg:p-20 p-10">
                             <p className="text-4xl text-white font-lexend">Ethereum</p>
                             <p className="text-white">Support Ethereum through HTTPS Outcalls to enable wallet transaction for user’s incentivization. Widely adopted coin makes ETH becomes everyone’s favorite.</p>
@@ -190,10 +191,13 @@ function Homepage() {
                                 <a className="bg-gradient-to-r from-[#FC8941] to-[#5D29E2] px-5 py-3 rounded-[10px] text-white font-lexend hover:cursor-pointer">ETHEREUM COINS</a>
                             </div>
                         </div>
-                        <div>
+                        <div className="max-w-[500px]">
                             <img src={eCoin} />
                         </div>
                     </div>
+                </section>
+                <section className="flex p-20 justify-center">
+                    <img className="w-3/4 max-w-[1200px]" src={cFusion}/>
                 </section>
                 {/* <!-- Footer --> */}
                 <footer className="bg-gray-900 text-white py-6 mt-auto">
