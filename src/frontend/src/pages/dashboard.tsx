@@ -8,8 +8,8 @@ import Filters from '../components/Filters';
 import Table from '../components/Table';
 
 const Dashboard = () => {
-    const { profile } = useAuthContext();
     const [activeMenu, setActiveMenu] = useState('Brand Owners Dashboard');
+    const { profile } = useAuthContext();
 
     const username = useMemo(() => {
         if (!profile) {
