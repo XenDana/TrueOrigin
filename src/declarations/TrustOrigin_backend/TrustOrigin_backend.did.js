@@ -34,9 +34,44 @@ export const idlFactory = ({ IDL }) => {
     'created_by' : IDL.Principal,
     'category' : IDL.Text,
   });
+  const UserDetailsInput = IDL.Record({
+    'email' : IDL.Text,
+    'first_name' : IDL.Text,
+    'detail_meta' : IDL.Vec(Metadata),
+    'last_name' : IDL.Text,
+    'phone_no' : IDL.Text,
+  });
+  const User = IDL.Record({
+    'id' : IDL.Principal,
+    'updated_at' : IDL.Nat64,
+    'updated_by' : IDL.Principal,
+    'org_ids' : IDL.Vec(IDL.Principal),
+    'is_principal' : IDL.Bool,
+    'is_enabled' : IDL.Bool,
+    'created_at' : IDL.Nat64,
+    'created_by' : IDL.Principal,
+    'email' : IDL.Opt(IDL.Text),
+    'first_name' : IDL.Opt(IDL.Text),
+    'detail_meta' : IDL.Vec(Metadata),
+    'last_name' : IDL.Opt(IDL.Text),
+    'phone_no' : IDL.Opt(IDL.Text),
+  });
+  const GenericError = IDL.Record({
+    'message' : IDL.Text,
+    'details' : IDL.Vec(Metadata),
+  });
+  const UserResult = IDL.Variant({
+    'user' : IDL.Opt(User),
+    'error' : GenericError,
+  });
   return IDL.Service({
     'create_organization' : IDL.Func([OrganizationInput], [Organization], []),
     'create_product' : IDL.Func([ProductInput], [Product], []),
+    'create_user' : IDL.Func(
+        [IDL.Principal, UserDetailsInput],
+        [UserResult],
+        [],
+      ),
     'get_organization_by_id' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(Organization)],
@@ -47,13 +82,27 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(Product)],
         ['query'],
       ),
+    'get_user_by_id' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
     'greet' : IDL.Func([IDL.Text], [IDL.Text], ['query']),
+    'register' : IDL.Func([], [User], []),
     'update_organization' : IDL.Func(
         [IDL.Principal, OrganizationInput],
         [Organization],
         [],
       ),
     'update_product' : IDL.Func([IDL.Principal, ProductInput], [Product], []),
+    'update_self_details' : IDL.Func([UserDetailsInput], [User], []),
+    'update_user' : IDL.Func(
+        [IDL.Principal, UserDetailsInput],
+        [UserResult],
+        [],
+      ),
+    'update_user_orgs' : IDL.Func(
+        [IDL.Principal, IDL.Vec(IDL.Principal)],
+        [UserResult],
+        [],
+      ),
+    'whoami' : IDL.Func([], [IDL.Opt(User)], ['query']),
   });
 };
 export const init = ({ IDL }) => { return []; };

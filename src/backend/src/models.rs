@@ -1,9 +1,20 @@
+use std::fmt;
+
+use ic_cdk::api;
 use candid::{CandidType, Principal, Deserialize};
+
+use crate::error::GenericError;
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct Metadata {
     key: String,
     value: String,
+}
+
+impl fmt::Debug for Metadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Meta [{}: {}]", self.key, self.value)
+    }
 }
 
 #[derive(CandidType, Deserialize,  Clone)]
@@ -16,6 +27,21 @@ pub struct Organization {
     pub created_by: Principal,
     pub updated_at: u64,
     pub updated_by: Principal,
+}
+
+impl Default for Organization {
+    fn default() -> Self {
+        Organization {
+            id: Principal::anonymous(), // Default value for Principal
+            name: String::new(),
+            description: String::new(),
+            metadata: Vec::new(),
+            created_at: api::time(),
+            created_by: api::caller(), // Default value for Principal
+            updated_at: api::time(),
+            updated_by: api::caller(), // Default value for Principal
+        }
+    }
 }
 
 #[derive(CandidType, Deserialize)]
@@ -48,7 +74,7 @@ pub struct ProductInput {
     pub metadata: Vec<Metadata>,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Clone)]
 pub struct User {
     pub id: Principal,
     pub is_principal: bool,
@@ -72,4 +98,10 @@ pub struct UserDetailsInput {
     pub phone_no: String,
     pub email: String,
     pub detail_meta: Vec<Metadata>,
+}
+
+#[derive(CandidType, Deserialize)]
+pub enum UserResult {
+    User(Option<User>),
+    Err(GenericError)
 }

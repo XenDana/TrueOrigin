@@ -1,23 +1,10 @@
 use candid::Principal;
 use ic_cdk::{api, query, update};
 use crate::global_state::{ORGANIZATIONS, PRODUCTS, USERS};
-use crate::models::{Organization, Product, OrganizationInput, ProductInput, User, UserDetailsInput};
+use crate::models::{Organization, Product, OrganizationInput, ProductInput, User, UserDetailsInput, UserResult};
 use crate::utils::generate_unique_principal;
+use crate::error::GenericError;
 
-impl Default for Organization {
-    fn default() -> Self {
-        Organization {
-            id: Principal::anonymous(), // Default value for Principal
-            name: String::new(),
-            description: String::new(),
-            metadata: Vec::new(),
-            created_at: api::time(),
-            created_by: api::caller(), // Default value for Principal
-            updated_at: api::time(),
-            updated_by: api::caller(), // Default value for Principal
-        }
-    }
-}
 
 #[query]
 pub fn get_organization_by_id(id: Principal) -> Option<Organization> {
@@ -134,13 +121,13 @@ pub fn update_product(id: Principal, input: ProductInput) -> Option<Product> {
 
 #[update]
 pub fn register() -> User {
+    let mut users = USERS.lock().unwrap();
     let user = User {
         id: api::caller(),
         is_principal: users.is_empty(),
         ..Default::default()
     };
-    let mut users = USERS.lock().unwrap();
-    users.insert(api::caller(), user);
+    users.insert(api::caller(), user.clone());
     user
 }
 
@@ -158,7 +145,7 @@ pub fn whoami() -> Option<User> {
 }
 
 #[update]
-pub fn update_self_details(input: UserDetailsInput) -> User {
+pub fn update_self_details(input: UserDetailsInput) -> UserResult {
     let mut users = USERS.lock().unwrap();
     if let Some(user) = users.get_mut(&api::caller()) {
         user.first_name = Some(input.first_name);
@@ -168,18 +155,25 @@ pub fn update_self_details(input: UserDetailsInput) -> User {
         user.detail_meta = input.detail_meta;
         user.updated_at = api::time();
         user.updated_by = api::caller(); // Update with the current user
-        Some(user.clone())
+        UserResult::User(Some(user.clone()))
     } else {
-        Err("You have not registered yet!")
+        UserResult::Err(GenericError {
+            message: "User not exist!".to_string(),
+            ..GenericError::default()
+        })
     }
 }
 
 #[update]
-pub fn create_user(id: Principal, input: UserDetailsInput) -> User {
+pub fn create_user(id: Principal, input: UserDetailsInput) -> UserResult {
     // TODO access control
     let mut users = USERS.lock().unwrap();
-    if let Some(user) = users.get(&id) {
-        Err("User already exists!")
+
+    if users.get(&id).is_some() {
+        return UserResult::Err(GenericError {
+            message: "User already exists!".to_string(),
+            ..GenericError::default()
+        })
     }
 
     let user = User {
@@ -194,12 +188,12 @@ pub fn create_user(id: Principal, input: UserDetailsInput) -> User {
         ..Default::default()
     };
     
-    users.insert(id, user);
-    user
+    users.insert(id, user.clone());
+    UserResult::User(Some(user))
 }
 
 #[update]
-pub fn update_user(id: Principal, input: UserDetailsInput) -> User {
+pub fn update_user(id: Principal, input: UserDetailsInput) -> UserResult {
     // TODO access control
     let mut users = USERS.lock().unwrap();
     if let Some(user) = users.get_mut(&id) {
@@ -210,21 +204,27 @@ pub fn update_user(id: Principal, input: UserDetailsInput) -> User {
         user.detail_meta = input.detail_meta;
         user.updated_at = api::time();
         user.updated_by = api::caller(); // Update with the current user
-        Some(user.clone())
+        UserResult::User(Some(user.clone()))
     } else {
-        Err("User not found!")
+        UserResult::Err(GenericError {
+            message: "User not found!".to_string(),
+            ..GenericError::default()
+        })
     }
 }
 
 #[update]
-pub fn update_user_orgs(id: Principal, org_ids: Vec<Principal>) -> User {
+pub fn update_user_orgs(id: Principal, org_ids: Vec<Principal>) -> UserResult {
     // TODO access control
     let mut users = USERS.lock().unwrap();
     if let Some(user) = users.get_mut(&id) {
         user.org_ids = org_ids;
-        Some(user.clone())
+        UserResult::User(Some(user.clone()))
     } else {
-        Err("User not found!")
+        UserResult::Err(GenericError {
+            message: "User not found!".to_string(),
+            ..GenericError::default()
+        })
     }
 }
 

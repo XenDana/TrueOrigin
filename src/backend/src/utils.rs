@@ -1,4 +1,4 @@
-use candid::{Principal};
+use candid::Principal;
 use ic_cdk::api::time;
 use sha2::{Sha256, Digest};
 
