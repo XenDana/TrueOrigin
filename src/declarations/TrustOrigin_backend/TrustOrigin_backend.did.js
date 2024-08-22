@@ -56,10 +56,22 @@ export const idlFactory = ({ IDL }) => {
     'last_name' : IDL.Opt(IDL.Text),
     'phone_no' : IDL.Opt(IDL.Text),
   });
+  const GenericError = IDL.Record({
+    'message' : IDL.Text,
+    'details' : IDL.Vec(Metadata),
+  });
+  const UserResult = IDL.Variant({
+    'user' : IDL.Opt(User),
+    'error' : GenericError,
+  });
   return IDL.Service({
     'create_organization' : IDL.Func([OrganizationInput], [Organization], []),
     'create_product' : IDL.Func([ProductInput], [Product], []),
-    'create_user' : IDL.Func([IDL.Principal, UserDetailsInput], [User], []),
+    'create_user' : IDL.Func(
+        [IDL.Principal, UserDetailsInput],
+        [UserResult],
+        [],
+      ),
     'get_organization_by_id' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(Organization)],
@@ -80,10 +92,14 @@ export const idlFactory = ({ IDL }) => {
       ),
     'update_product' : IDL.Func([IDL.Principal, ProductInput], [Product], []),
     'update_self_details' : IDL.Func([UserDetailsInput], [User], []),
-    'update_user' : IDL.Func([IDL.Principal, UserDetailsInput], [User], []),
+    'update_user' : IDL.Func(
+        [IDL.Principal, UserDetailsInput],
+        [UserResult],
+        [],
+      ),
     'update_user_orgs' : IDL.Func(
         [IDL.Principal, IDL.Vec(IDL.Principal)],
-        [User],
+        [UserResult],
         [],
       ),
     'whoami' : IDL.Func([], [IDL.Opt(User)], ['query']),
