@@ -4,7 +4,11 @@ import { transform } from 'typescript'
 export default {
   content: ["./src/**/*.{html,js,ts,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        lexend: ["Lexend", "sans-serif"],
+      },
+    },
   },
   plugins: [],
 }
