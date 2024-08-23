@@ -241,60 +241,6 @@ pub enum UserRole {
 }
 
 #[derive(CandidType, Deserialize, Clone)]
-pub struct ProductSerialNumber {
-    pub product_id: Principal,
-    pub serial_no: Principal,
-    pub user_serial_no: String,
-    pub print_version: u8,
-    pub metadata: Vec<Metadata>,
-    pub created_at: u64,
-    pub created_by: Principal,
-    pub updated_at: u64,
-    pub updated_by: Principal,
-}
-
-impl Default for ProductSerialNumber {
-    fn default() -> Self {
-        ProductSerialNumber { 
-            product_id: Principal::anonymous(),
-            serial_no: Principal::anonymous(),
-            user_serial_no: String::new(),
-            print_version: 0,
-            metadata: Vec::new(),
-            created_at: api::time(),
-            created_by: api::caller(), // Default value for Principal
-            updated_at: api::time(),
-            updated_by: api::caller(), // Default value for Principal
-        }
-    }
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-pub struct ProductVerification {
-    pub id: Principal,
-    pub product_id: Principal,
-    pub serial_no: Principal,
-    pub print_version: u8,
-    pub metadata: Vec<Metadata>,
-    pub created_at: u64,
-    pub created_by: Principal,
-}
-
-impl Default for ProductVerification {
-    fn default() -> Self {
-        ProductVerification {
-            id: Principal::anonymous(),
-            product_id: Principal::anonymous(),
-            serial_no: Principal::anonymous(),
-            print_version: 0,
-            metadata: Vec::new(),
-            created_at: api::time(),
-            created_by: api::caller(), // Default value for Principal
-        }
-    }
-}
-
-#[derive(CandidType, Deserialize, Clone)]
 pub struct User {
     pub id: Principal,
     pub user_role: Option<UserRole>,
