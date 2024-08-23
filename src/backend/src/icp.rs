@@ -14,6 +14,7 @@ use crate::models::{
     Metadata,
     Organization, OrganizationInput, OrganizationPublic, OrganizationResult, PrivateKeyResult,
     Product, ProductInput, ProductResult, ProductSerialNumber, UniqueCodeResult, ProductSerialNumberResult,
+    ProductUniqueCodeResult, ProductUniqueCodeResultRecord,
     ProductVerification, ProductVerificationStatus, ProductVerificationResult,
     Reseller, ResellerInput, ResellerVerificationResult,
     User, UserDetailsInput, UserResult, UserRole
@@ -763,14 +764,22 @@ pub fn generate_reseller_unique_code(reseller_id: Principal) -> UniqueCodeResult
 
 
 #[query]
-pub fn list_product_serial_number(organization_id: Principal, product_id: Option<Principal>) -> Vec<ProductSerialNumber> {
+pub fn list_product_serial_number(organization_id: Option<Principal>, product_id: Option<Principal>) -> Vec<ProductSerialNumber> {
     let serial_numbers = PRODUCT_SERIAL_NUMBERS.lock().unwrap();
+    if organization_id.is_none() {
+        let mut sn_values: Vec<ProductSerialNumber> = Vec::new();
+        serial_numbers.clone().into_values().for_each(|sn_vec| {
+            sn_vec.into_iter().for_each(|sn| sn_values.push(sn))
+        });
+        return sn_values;
+    }
+
     let products = PRODUCTS.lock().unwrap();
     if product_id.is_none() {
         // search all available for orgs
         let mut filtered_serial_numbers: Vec<ProductSerialNumber> = Vec::new();
         let product_ids: Vec<Principal> = products.clone().into_values()
-            .filter(|p| p.org_id == organization_id)
+            .filter(|p| p.org_id == organization_id.unwrap())
             .map(|p| p.id)
             .collect();
         product_ids.into_iter().for_each(|p_id| {
@@ -787,7 +796,7 @@ pub fn list_product_serial_number(organization_id: Principal, product_id: Option
         return Vec::new();
     }
     let product = products.get(&product_id.unwrap()).unwrap();
-    if product.org_id != organization_id {
+    if product.org_id != organization_id.unwrap() {
         return Vec::new();
     }
     
@@ -800,81 +809,84 @@ pub fn list_product_serial_number(organization_id: Principal, product_id: Option
 #[update]
 pub fn create_product_serial_number(product_id: Principal, user_serial_no: Option<String>) -> ProductSerialNumberResult {
     let mut product_serial_nos = PRODUCT_SERIAL_NUMBERS.lock().unwrap();
-    let mut product_sn_vec: Vec<ProductSerialNumber>;
     match product_serial_nos.get_mut(&product_id) {
         Some(vec) => {
-            product_sn_vec = vec.to_vec();
-        },
-        None => {
-            product_sn_vec = Vec::new();
-        }
-    }
-    match user_serial_no {
-        Some(serial_no) => {
-            if product_sn_vec.clone().into_iter().any(|p_sn| p_sn.user_serial_no == serial_no) {
-                return ProductSerialNumberResult::Error(GenericError {
-                    message: "Existing user serial number already exists!".to_string(),
-                    ..Default::default()
-                })
+            if user_serial_no.is_some() {
+                if vec.clone().into_iter().any(|p_sn| p_sn.user_serial_no == user_serial_no.clone().unwrap()) {
+                    return ProductSerialNumberResult::Error(GenericError {
+                        message: "Existing user serial number already exists!".to_string(),
+                        ..Default::default()
+                    })
+                }
             }
+            
+            let product_sn = ProductSerialNumber {
+                product_id: product_id,
+                user_serial_no: user_serial_no.unwrap_or_default(),
+                ..Default::default()
+            };
+            vec.push(product_sn.clone());
+            ProductSerialNumberResult::Result(product_sn)
         },
         None => {
-            
+            let mut product_sn_vec = Vec::new();
+            let product_sn = ProductSerialNumber {
+                product_id: product_id,
+                user_serial_no: user_serial_no.unwrap_or_default(),
+                ..Default::default()
+            };
+            product_sn_vec.push(product_sn.clone());
+            product_serial_nos.insert(product_id, product_sn_vec);
+            ProductSerialNumberResult::Result(product_sn)
         }
     }
-    let product_sn = ProductSerialNumber {
-        product_id: product_id,
-        ..Default::default()
-    }; 
-    product_sn_vec.push(product_sn.clone());
-    ProductSerialNumberResult::Result(product_sn)
 }
 
 #[update]
 pub fn update_product_serial_number(product_id: Principal, serial_no: Principal, user_serial_no: Option<String>) -> ProductSerialNumberResult {
     let mut product_serial_nos = PRODUCT_SERIAL_NUMBERS.lock().unwrap();
-    let product_sn_vec = product_serial_nos.get_mut(&product_id);
-    if product_sn_vec.is_none() {
-        return ProductSerialNumberResult::Error(GenericError {
-            message: "No serial number for product exist!".to_string(),
-            ..Default::default()
-        })
-    }
-
-    let product_sn_vec_mut = product_sn_vec.unwrap();
-    let product_sn = product_sn_vec_mut.clone().into_iter().find(|psn| psn.serial_no == serial_no);
-    if product_sn.is_none() {
-        return ProductSerialNumberResult::Error(GenericError {
-            message: "No serial number for product exist!".to_string(),
-            ..Default::default()
-        })
-    }
-    let mut product_sn_ref = product_sn.unwrap();
-    match user_serial_no {
-        Some(u_serial_no) => {
-            if product_sn_vec_mut.clone().into_iter().any(|p_sn| p_sn.serial_no != serial_no && p_sn.user_serial_no == u_serial_no) {
+    match product_serial_nos.get_mut(&product_id) {
+        Some(vec) => {
+            if user_serial_no.is_some() {
+                if vec.clone().into_iter()
+                    .any(|p_sn| p_sn.user_serial_no == user_serial_no.clone().unwrap()
+                        && p_sn.serial_no != serial_no) {
+                    return ProductSerialNumberResult::Error(GenericError {
+                        message: "Existing user serial number already exists!".to_string(),
+                        ..Default::default()
+                    })
+                }
+            }
+            let existing_sn = vec.into_iter().find(|s| s.serial_no == serial_no);
+            if existing_sn.is_none() {
                 return ProductSerialNumberResult::Error(GenericError {
-                    message: "Existing user serial number already exists".to_string(),
+                    message: "Serial number not found!".to_string(),
                     ..Default::default()
                 })
             }
-            product_sn_ref.user_serial_no = u_serial_no;
+            let sn = existing_sn.unwrap();
+            sn.user_serial_no = user_serial_no.unwrap_or_default();
+            sn.updated_at = api::time();
+            sn.updated_by = api::caller();
+            
+            ProductSerialNumberResult::Result(sn.clone())
         },
         None => {
-            
+            ProductSerialNumberResult::Error(GenericError {
+                message: "Product has no registered serial_nos!".to_string(),
+                ..Default::default()
+            })
         }
     }
-    
-    ProductSerialNumberResult::Result(product_sn_ref.clone())
 }
 
 #[update]
-pub fn print_product_serial_number(product_id: Principal, serial_no: Principal) -> UniqueCodeResult {
+pub fn print_product_serial_number(product_id: Principal, serial_no: Principal) -> ProductUniqueCodeResult {
     // unique_code is
     let mut binding = PRODUCT_SERIAL_NUMBERS.lock().unwrap();
     let product_sn = binding.get_mut(&product_id);
     if product_sn.is_none() {
-        return UniqueCodeResult::Error(GenericError { 
+        return ProductUniqueCodeResult::Error(GenericError { 
             message: "Product has no serial number recorded!".to_string(),
             ..Default::default()
         })
@@ -882,7 +894,7 @@ pub fn print_product_serial_number(product_id: Principal, serial_no: Principal) 
 
     let product_sn_ref = product_sn.unwrap().iter_mut().find(|sn| sn.serial_no == serial_no);
     if product_sn_ref.is_none() {
-        return UniqueCodeResult::Error(GenericError { 
+        return ProductUniqueCodeResult::Error(GenericError { 
             message: "Serial number for product is not present!".to_string(),
             ..Default::default()
         })
@@ -891,7 +903,7 @@ pub fn print_product_serial_number(product_id: Principal, serial_no: Principal) 
     let products = PRODUCTS.lock().unwrap();
     let product = products.get(&product_id);
     if product.is_none() {
-        return UniqueCodeResult::Error(GenericError { 
+        return ProductUniqueCodeResult::Error(GenericError { 
             message: "Product reference does not exist!".to_string(),
             ..Default::default()
         })
@@ -899,7 +911,7 @@ pub fn print_product_serial_number(product_id: Principal, serial_no: Principal) 
     let organizations = ORGANIZATIONS.lock().unwrap();
     let organization = organizations.get(&product.unwrap().org_id);
     if organization.is_none() {
-        return UniqueCodeResult::Error(GenericError { 
+        return ProductUniqueCodeResult::Error(GenericError { 
             message: "Organization does not exist!".to_string(),
             ..Default::default()
         })
@@ -907,14 +919,14 @@ pub fn print_product_serial_number(product_id: Principal, serial_no: Principal) 
     // deserialize to 
     let private_key_bytes = hex::decode(&organization.unwrap().private_key);
     if private_key_bytes.is_err() {
-        return UniqueCodeResult::Error(GenericError {
+        return ProductUniqueCodeResult::Error(GenericError {
             message: "Malformed secret key for organization!".to_string(),
             ..GenericError::default()
         })
     }
     let private_key = SigningKey::from_slice(&private_key_bytes.unwrap().as_slice()); 
     if private_key.is_err() {
-        return UniqueCodeResult::Error(GenericError {
+        return ProductUniqueCodeResult::Error(GenericError {
             message: "Malformed secret key for organization!".to_string(),
             ..GenericError::default()
         })
@@ -923,6 +935,8 @@ pub fn print_product_serial_number(product_id: Principal, serial_no: Principal) 
 
     let sn_ref = product_sn_ref.unwrap();
     sn_ref.print_version += 1;
+    sn_ref.updated_at = api::time();
+    sn_ref.updated_by = api::caller();
 
     // unique code: create a signed message for the product, using the public key
     // message contents will be
@@ -933,7 +947,13 @@ pub fn print_product_serial_number(product_id: Principal, serial_no: Principal) 
     let hashed_message = hasher.finalize();
     
     let signature: Signature = private_key.unwrap().sign(&hashed_message);
-    UniqueCodeResult::UniqueCode(signature.to_string())
+    ProductUniqueCodeResult::Result(ProductUniqueCodeResultRecord {
+        unique_code: signature.to_string(),
+        print_version: sn_ref.print_version,
+        product_id: sn_ref.product_id,
+        serial_no: sn_ref.serial_no,
+        created_at: sn_ref.updated_at
+    })
 }
 
 #[update]
@@ -1024,38 +1044,61 @@ pub fn verify_product(
     }
 
     // unique code valid. record the validation result
-    let mut result = ProductVerificationStatus::FirstVerification;
-    let mut product_verifications = PRODUCT_VERIFICATIONS.lock().unwrap();
-    let mut verifications: Vec<ProductVerification>;
-    if product_verifications.contains_key(&product_id) {
-        // add verification
-        verifications = product_verifications.get_mut(&product_id).unwrap().to_vec();
-    } else {
-        verifications = Vec::new();
-    }
-    if verifications.clone().into_iter().any(|h| h.serial_no == serial_no) {
-        result = ProductVerificationStatus::MultipleVerification;
-    }
-    let verification = ProductVerification {
-        metadata: metadata,
+    let mut verification = ProductVerification {
+        product_id: product.id,
+        serial_no: serial_no,
+        print_version: print_version,
         ..Default::default()
     };
-    verifications.push(verification);
+    let mut result = ProductVerificationStatus::FirstVerification;
+    let mut product_verifications = PRODUCT_VERIFICATIONS.lock().unwrap();
+    if let Some(verifications) = product_verifications.get_mut(&product_id) {
+        if verifications.into_iter().any(|c| c.serial_no == serial_no) {
+            result = ProductVerificationStatus::MultipleVerification;
+        }
+
+        let mut result_meta = Metadata {
+            key: "result".to_string(),
+            value: "Unique".to_string(),
+        };
+        if result == ProductVerificationStatus::MultipleVerification {
+            result_meta.value = "MultipleVerification".to_string();
+        }
+        
+        verification.metadata = [metadata.clone(), Vec::from([result_meta])].concat();
+        verifications.push(verification.clone());
+    } else {
+        let mut verifications = Vec::new();
+        verification.metadata = [metadata.clone(), Vec::from([Metadata {
+            key: "result".to_string(),
+            value: "Unique".to_string(),
+        }])].concat();
+        verifications.push(verification);
+        product_verifications.insert(product_id, verifications);
+    }
     ProductVerificationResult::Status(result)
 }
 
 #[query]
 pub fn list_product_verifications(
-    organization_id: Principal,
+    organization_id: Option<Principal>,
     product_id: Option<Principal>,
     serial_number: Option<Principal>
 ) -> Vec<ProductVerification> {
     let verifications = PRODUCT_VERIFICATIONS.lock().unwrap();
+    if organization_id.is_none() {
+        let mut sn_values: Vec<ProductVerification> = Vec::new();
+        verifications.clone().into_values().for_each(|sn_vec| {
+            sn_vec.into_iter().for_each(|sn| sn_values.push(sn))
+        });
+        return sn_values;
+    }
+
     let products = PRODUCTS.lock().unwrap();
     if product_id.is_none() {
         let mut filtered_verifications: Vec<ProductVerification> = Vec::new();
         let product_ids: Vec<Principal> = products.clone().into_values()
-            .filter(|p| p.org_id == organization_id)
+            .filter(|p| p.org_id == organization_id.unwrap())
             .map(|p| p.clone().id)
             .collect();
         product_ids.into_iter().for_each(|p_id| {
@@ -1072,7 +1115,7 @@ pub fn list_product_verifications(
         return Vec::new();
     }
     let product = products.get(&product_id.unwrap()).unwrap();
-    if product.org_id != organization_id {
+    if product.org_id != organization_id.unwrap() {
         return Vec::new();
     }
     if !verifications.contains_key(&product_id.unwrap()) {

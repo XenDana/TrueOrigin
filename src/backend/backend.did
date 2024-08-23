@@ -8,7 +8,7 @@ type Organization = record {
     name: text;
     description: text;
     metadata: vec Metadata;
-    private_key: blob;
+    private_key: text;
     created_at: nat64;
     created_by: principal;
     updated_at: nat64;
@@ -43,8 +43,8 @@ type Product = record {
     org_id: principal;
     category: text;
     description: text;
-    public_key: blob;
     metadata: vec Metadata;
+    public_key: text;
     created_at: nat64;
     created_by: principal;
     updated_at: nat64;
@@ -59,7 +59,7 @@ type ProductInput = record {
     metadata: vec Metadata;
 };
 
-type ProductResult = record {
+type ProductResult = variant {
     none: null;
     product: Product;
     error: GenericError;
@@ -203,6 +203,18 @@ type BalanceResult = variant { Ok : nat; Err : text };
 type Tokens = record { e8s : nat64 };
 type TransferArgs = record {
 amount : nat
+}
+type ProductUniqueCodeResultRecord = record {
+    unique_code: text;
+    print_version: nat8;
+    product_id: principal;
+    serial_no: principal;
+    created_at: nat64;
+};
+
+type ProductUniqueCodeResult = variant {
+    result: ProductUniqueCodeResultRecord;
+    error: GenericError;
 };
 
 service : {
@@ -235,11 +247,11 @@ service : {
     "find_resellers_by_name_or_id": (text) -> (vec Reseller) query;
     "verify_reseller": (reseller_id: principal, public_key: text) -> (ResellerVerificationResult) query;
     "generate_reseller_unique_code": (reseller_id: principal) -> (UniqueCodeResult) query;
-    "list_product_serial_number": (organization_id: principal, product_id: opt principal) -> (vec ProductSerialNumber) query;
+    "list_product_serial_number": (organization_id: opt principal, product_id: opt principal) -> (vec ProductSerialNumber) query;
     "create_product_serial_number": (product_id: principal, user_serial_no: opt text) -> (ProductSerialNumberResult);
     "update_product_serial_number": (product_id: principal, serial_no: principal, user_serial_no: opt text) -> (ProductSerialNumberResult);
-    "print_product_serial_number": (product_id: principal, serial_no: principal) -> (UniqueCodeResult);
-    "verify_product": (product_id: principal, serial_no: principal, unique_code: text, metadata: vec Metadata) -> (ProductVerificationResult);
-    "list_product_verifications": (organization_id: principal, product_id: opt principal, serial_number: opt principal) -> (vec ProductVerification) query;
+    "print_product_serial_number": (product_id: principal, serial_no: principal) -> (ProductUniqueCodeResult);
+    "verify_product": (product_id: principal, serial_no: principal, print_version: nat8, unique_code: text, metadata: vec Metadata) -> (ProductVerificationResult);
+    "list_product_verifications": (organization_id: opt principal, product_id: opt principal, serial_number: opt principal) -> (vec ProductVerification) query;
     "list_product_verifications_by_user": (user_id: principal, organization_id: opt principal) -> (vec ProductVerification) query;
 };

@@ -7,7 +7,7 @@ use std::borrow::Cow;
 
 const MAX_VALUE_SIZE: u32 = 500;
 
-use crate::error::GenericError;
+use crate::{error::GenericError, utils::generate_unique_principal};
 
 #[derive(CandidType, Deserialize, Clone)]
 pub struct Metadata {
@@ -200,7 +200,7 @@ impl Default for ProductSerialNumber {
     fn default() -> Self {
         ProductSerialNumber { 
             product_id: Principal::anonymous(),
-            serial_no: Principal::anonymous(),
+            serial_no: generate_unique_principal(Principal::anonymous()),
             user_serial_no: String::new(),
             print_version: 0,
             metadata: Vec::new(),
@@ -226,7 +226,7 @@ pub struct ProductVerification {
 impl Default for ProductVerification {
     fn default() -> Self {
         ProductVerification {
-            id: Principal::anonymous(),
+            id: generate_unique_principal(Principal::anonymous()),
             product_id: Principal::anonymous(),
             serial_no: Principal::anonymous(),
             print_version: 0,
@@ -237,7 +237,7 @@ impl Default for ProductVerification {
     }
 }
 
-#[derive(CandidType, Deserialize, Clone, Copy, Debug)]
+#[derive(CandidType, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum UserRole {
     Admin,
     BrandOwner,
@@ -410,7 +410,7 @@ pub enum UniqueCodeResult {
     Error(GenericError)
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, PartialEq, Eq)]
 pub enum ProductVerificationStatus {
     FirstVerification,
     MultipleVerification,
@@ -425,7 +425,7 @@ pub enum ProductVerificationResult {
     Error(GenericError),
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, PartialEq, Eq)]
 pub enum VerificationStatus {
     Success,
     MultipleVerification,
@@ -451,6 +451,23 @@ pub enum ResellerVerificationResult {
 pub enum ProductSerialNumberResult {
     #[serde(rename = "result")]
     Result(ProductSerialNumber),
+    #[serde(rename = "error")]
+    Error(GenericError),
+}
+
+#[derive(CandidType, Deserialize)]
+pub struct ProductUniqueCodeResultRecord {
+    pub unique_code: String,
+    pub print_version: u8,
+    pub product_id: Principal,
+    pub serial_no: Principal,
+    pub created_at: u64,
+}
+
+#[derive(CandidType, Deserialize)]
+pub enum ProductUniqueCodeResult {
+    #[serde(rename = "result")]
+    Result(ProductUniqueCodeResultRecord),
     #[serde(rename = "error")]
     Error(GenericError),
 }
