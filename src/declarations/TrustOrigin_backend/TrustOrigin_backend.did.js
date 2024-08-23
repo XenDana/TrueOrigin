@@ -30,7 +30,7 @@ export const idlFactory = ({ IDL }) => {
     'id' : IDL.Principal,
     'updated_at' : IDL.Nat64,
     'updated_by' : IDL.Principal,
-    'public_key' : IDL.Vec(IDL.Nat8),
+    'public_key' : IDL.Text,
     'metadata' : IDL.Vec(Metadata),
     'name' : IDL.Text,
     'org_id' : IDL.Principal,
@@ -39,7 +39,7 @@ export const idlFactory = ({ IDL }) => {
     'created_by' : IDL.Principal,
     'category' : IDL.Text,
   });
-  const ProductResult = IDL.Record({
+  const ProductResult = IDL.Variant({
     'none' : IDL.Null,
     'error' : GenericError,
     'product' : Product,
@@ -122,6 +122,17 @@ export const idlFactory = ({ IDL }) => {
     'print_version' : IDL.Nat8,
     'serial_no' : IDL.Principal,
   });
+  const ProductUniqueCodeResultRecord = IDL.Record({
+    'product_id' : IDL.Principal,
+    'created_at' : IDL.Nat64,
+    'print_version' : IDL.Nat8,
+    'unique_code' : IDL.Text,
+    'serial_no' : IDL.Principal,
+  });
+  const ProductUniqueCodeResult = IDL.Variant({
+    'result' : ProductUniqueCodeResultRecord,
+    'error' : GenericError,
+  });
   const ResellerInput = IDL.Record({
     'ecommerce_urls' : IDL.Vec(Metadata),
     'metadata' : IDL.Vec(Metadata),
@@ -201,12 +212,16 @@ export const idlFactory = ({ IDL }) => {
     'get_user_by_id' : IDL.Func([IDL.Principal], [IDL.Opt(User)], ['query']),
     'greet' : IDL.Func([IDL.Text], [IDL.Text], ['query']),
     'list_product_serial_number' : IDL.Func(
-        [IDL.Principal, IDL.Opt(IDL.Principal)],
+        [IDL.Opt(IDL.Principal), IDL.Opt(IDL.Principal)],
         [IDL.Vec(ProductSerialNumber)],
         ['query'],
       ),
     'list_product_verifications' : IDL.Func(
-        [IDL.Principal, IDL.Opt(IDL.Principal), IDL.Opt(IDL.Principal)],
+        [
+          IDL.Opt(IDL.Principal),
+          IDL.Opt(IDL.Principal),
+          IDL.Opt(IDL.Principal),
+        ],
         [IDL.Vec(ProductVerification)],
         ['query'],
       ),
@@ -218,7 +233,7 @@ export const idlFactory = ({ IDL }) => {
     'list_products' : IDL.Func([IDL.Principal], [IDL.Vec(Product)], ['query']),
     'print_product_serial_number' : IDL.Func(
         [IDL.Principal, IDL.Principal],
-        [UniqueCodeResult],
+        [ProductUniqueCodeResult],
         [],
       ),
     'register' : IDL.Func([], [User], []),
@@ -252,7 +267,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'verify_product' : IDL.Func(
-        [IDL.Principal, IDL.Principal, IDL.Text, IDL.Vec(Metadata)],
+        [IDL.Principal, IDL.Principal, IDL.Nat8, IDL.Text, IDL.Vec(Metadata)],
         [ProductVerificationResult],
         [],
       ),
