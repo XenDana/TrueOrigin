@@ -16,7 +16,7 @@ export interface Organization {
   'description' : string,
   'created_at' : bigint,
   'created_by' : Principal,
-  'private_key' : Uint8Array | number[],
+  'private_key' : string,
 }
 export interface OrganizationInput {
   'metadata' : Array<Metadata>,
@@ -41,7 +41,7 @@ export interface Product {
   'id' : Principal,
   'updated_at' : bigint,
   'updated_by' : Principal,
-  'public_key' : Uint8Array | number[],
+  'public_key' : string,
   'metadata' : Array<Metadata>,
   'name' : string,
   'org_id' : Principal,
@@ -57,11 +57,9 @@ export interface ProductInput {
   'description' : string,
   'category' : string,
 }
-export interface ProductResult {
-  'none' : null,
-  'error' : GenericError,
-  'product' : Product,
-}
+export type ProductResult = { 'none' : null } |
+  { 'error' : GenericError } |
+  { 'product' : Product };
 export interface ProductSerialNumber {
   'updated_at' : bigint,
   'updated_by' : Principal,
@@ -75,6 +73,17 @@ export interface ProductSerialNumber {
 }
 export type ProductSerialNumberResult = { 'result' : ProductSerialNumber } |
   { 'error' : GenericError };
+export type ProductUniqueCodeResult = {
+    'result' : ProductUniqueCodeResultRecord
+  } |
+  { 'error' : GenericError };
+export interface ProductUniqueCodeResultRecord {
+  'product_id' : Principal,
+  'created_at' : bigint,
+  'print_version' : number,
+  'unique_code' : string,
+  'serial_no' : Principal,
+}
 export interface ProductVerification {
   'id' : Principal,
   'product_id' : Principal,
@@ -173,11 +182,11 @@ export interface _SERVICE {
   'get_user_by_id' : ActorMethod<[Principal], [] | [User]>,
   'greet' : ActorMethod<[string], string>,
   'list_product_serial_number' : ActorMethod<
-    [Principal, [] | [Principal]],
+    [[] | [Principal], [] | [Principal]],
     Array<ProductSerialNumber>
   >,
   'list_product_verifications' : ActorMethod<
-    [Principal, [] | [Principal], [] | [Principal]],
+    [[] | [Principal], [] | [Principal], [] | [Principal]],
     Array<ProductVerification>
   >,
   'list_product_verifications_by_user' : ActorMethod<
@@ -187,7 +196,7 @@ export interface _SERVICE {
   'list_products' : ActorMethod<[Principal], Array<Product>>,
   'print_product_serial_number' : ActorMethod<
     [Principal, Principal],
-    UniqueCodeResult
+    ProductUniqueCodeResult
   >,
   'register' : ActorMethod<[], User>,
   'register_as_organization' : ActorMethod<[OrganizationInput], UserResult>,
@@ -206,7 +215,7 @@ export interface _SERVICE {
   'update_user' : ActorMethod<[Principal, UserDetailsInput], UserResult>,
   'update_user_orgs' : ActorMethod<[Principal, Array<Principal>], UserResult>,
   'verify_product' : ActorMethod<
-    [Principal, Principal, string, Array<Metadata>],
+    [Principal, Principal, number, string, Array<Metadata>],
     ProductVerificationResult
   >,
   'verify_reseller' : ActorMethod<

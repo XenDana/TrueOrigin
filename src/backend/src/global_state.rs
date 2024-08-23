@@ -1,5 +1,5 @@
 use candid::Principal;
-use ic_cdk::init;
+use ic_cdk::{init, post_upgrade};
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
 use getrandom::register_custom_getrandom;
@@ -13,15 +13,28 @@ thread_local! {
     static RNG: RefCell<Option<StdRng>> = RefCell::new(None);
 }
 
-#[init]
-fn init() {
-    ic_cdk_timers::set_timer(Duration::ZERO, || ic_cdk::spawn(async {
+fn _restart_rng() {
+    // need to reset the RNG each time the canister is restarted
+    let _timer_id = ic_cdk_timers::set_timer(Duration::ZERO, || ic_cdk::spawn(async {
         let (seed,): ([u8; 32],) = ic_cdk::call(Principal::management_canister(), "raw_rand", ()).await.unwrap();
+        ic_cdk::println!("Got seed");
         RNG.with(|rng| *rng.borrow_mut() = Some(StdRng::from_seed(seed)));
     }));
+    ic_cdk::println!("registered timer {:?}", _timer_id);
+}
+
+#[post_upgrade]
+fn post_upgrade() {
+    _restart_rng();
+}
+
+#[init]
+fn init() {
+    _restart_rng();
 }
 
 fn custom_getrandom(buf: &mut [u8]) -> Result<(), getrandom::Error> {
+    ic_cdk::println!("custom_getrandom");
     RNG.with(|rng| rng.borrow_mut().as_mut().unwrap().fill_bytes(buf));
     Ok(())
 }
