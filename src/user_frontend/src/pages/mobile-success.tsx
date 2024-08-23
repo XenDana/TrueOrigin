@@ -3,8 +3,8 @@ import successImageUrl from "../assets/scan-success.png"
 
 const MobileSuccess: React.FC = () => {
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">
-      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-md text-center items-center justify-center">
+    <div className="flex justify-center items-center min-h-screen p-4">
+      <div className="w-full max-w-md p-6 rounded-lg shadow-md text-center items-center justify-center">
         {/* Logo */}
         <img src={logo} alt="TrueOrigin Logo" className="mt-4 mb-6"/>
         
