@@ -397,7 +397,7 @@ pub fn create_user(id: Principal, input: UserDetailsInput) -> UserResult {
     ic_cdk::print(std::format!("User: {:?}", user.id.to_text()));
     
     users.insert(id, user.clone());
-    UserResult::User(Some(user))
+    UserResult::User(user)
 }
 
 #[update]

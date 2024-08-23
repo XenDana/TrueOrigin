@@ -19,27 +19,30 @@ deploy-provider:
 	    } \
 	)"
 deploy-ledger:
-    dfx deploy icp_ledger_canister --argument "( \
-        variant { \
-            Init = record { \
-                minting_account = \"$MINTER_ACCOUNT_ID\"; \
-                initial_values = vec { \
-                    record { \
-                        \"$DEFAULT_ACCOUNT_ID\"; \
-                        record { \
-                            e8s = 10_000_000_000 : nat64; \
-                        }; \
-                    }; \
-                }; \
-                send_whitelist = vec {}; \
-                transfer_fee = opt record { \
-                    e8s = 10_000 : nat64; \
-                }; \
-                token_symbol = opt \"LICP\"; \
-                token_name = opt \"Local ICP\"; \
-            } \
-        } \
-    )"
+	dfx deploy icrc1_ledger_canister --argument "( \
+			variant { Init = \
+				record { \
+					token_symbol = \"ICRC1\"; \
+					token_name = \"L-ICRC1\"; \
+					minting_account = record { owner = principal \"${MINTER}\" }; \
+					transfer_fee = 10_000; \
+					metadata = vec {}; \
+					initial_balances = vec { \
+						record { \
+							record { owner = principal \"${DEFAULT}\" }; \
+							10_000_000_000; \
+						}; \
+					}; \
+					archive_options = record { \
+						num_blocks_to_archive = 1000; \
+						trigger_threshold = 2000; \
+						controller_id = principal \"${MINTER}\"; \
+					}; \
+				} \
+			} \
+		)"
+deploy-evm:
+	dfx deploy evm_rpc --argument '(record { nodesInSubnet = 28 })'
 
 upgrade-provider:
 	dfx canister install ic_siwe_provider --mode upgrade --upgrade-unchanged --argument "( \
@@ -79,5 +82,3 @@ clean:
 	rm -rf src/declarations
 	rm -f .env
 	cargo clean
-
-
