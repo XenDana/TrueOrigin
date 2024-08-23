@@ -1,7 +1,15 @@
 import logo from "../assets/true-origin.png"
 import successImageUrl from "../assets/scan-success.png"
 
-const MobileSuccess: React.FC = () => {
+interface MobileSuccessProps {
+  redeemCoinFunc: Function; // Optional prop
+}
+
+const MobileSuccess: React.FC<MobileSuccessProps> = ({ redeemCoinFunc }) => {
+  const handleClick = () => {
+    redeemCoinFunc('granted');
+  }
+
   return (
     <div className="flex justify-center items-center min-h-screen p-4">
       <div className="w-full max-w-md p-6 rounded-lg shadow-md text-center items-center justify-center">
@@ -30,7 +38,7 @@ const MobileSuccess: React.FC = () => {
         <p className="text-gray-600 mb-6">Your Product is Genuine!</p>
         
         {/* CTA Button */}
-        <button className="bg-green-500 text-white px-6 py-3 rounded-full hover:bg-green-600 transition">
+        <button className="bg-green-500 text-white px-6 py-3 rounded-full hover:bg-green-600 transition" onClick={handleClick}>
           Click to Redeem Coin &rarr;
         </button>
       </div>

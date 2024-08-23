@@ -16,14 +16,38 @@ function App() {
     // hit backend
     // load new component
 
+    console.log("handle scan result ", scanResult);
+
     if (scanResult === "http://example.com") {
       // load success
       setContent('success');
+    } else if (scanResult === "http://xendana.com") {
+      setContent('success-red');
     }
   }
 
   const showContent = () => {
-    return <Mobile scanResultFunc={setScanResult}/>
+    console.log("content on show content ", content);
+    switch (content) {
+      case 'scan': {
+        return (
+          <Mobile scanResultFunc={setScanResult}/>
+        )
+      } case 'success': {
+        return (
+          <MobileSuccess redeemCoinFunc={setContent}/>
+        )
+      } case 'granted': {
+        return (
+          <MobileCoinGranted backToHomeFunc={setContent} />
+        )
+      } case 'success-red': {
+        return (
+          <MobileSuccessRed />
+        )
+      } default:
+        return <Mobile scanResultFunc={setScanResult}/>
+    }
   }
 
   useEffect(() => {
