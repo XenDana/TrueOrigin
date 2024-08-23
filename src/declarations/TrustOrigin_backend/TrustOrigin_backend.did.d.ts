@@ -16,16 +16,32 @@ export interface Organization {
   'description' : string,
   'created_at' : bigint,
   'created_by' : Principal,
+  'private_key' : Uint8Array | number[],
 }
 export interface OrganizationInput {
   'metadata' : Array<Metadata>,
   'name' : string,
   'description' : string,
 }
+export interface OrganizationPublic {
+  'id' : Principal,
+  'updated_at' : bigint,
+  'updated_by' : Principal,
+  'metadata' : Array<Metadata>,
+  'name' : string,
+  'description' : string,
+  'created_at' : bigint,
+  'created_by' : Principal,
+}
+export type OrganizationResult = { 'error' : GenericError } |
+  { 'organization' : Organization };
+export type PrivateKeyResult = { 'key' : string } |
+  { 'error' : GenericError };
 export interface Product {
   'id' : Principal,
   'updated_at' : bigint,
   'updated_by' : Principal,
+  'public_key' : Uint8Array | number[],
   'metadata' : Array<Metadata>,
   'name' : string,
   'org_id' : Principal,
@@ -41,10 +57,75 @@ export interface ProductInput {
   'description' : string,
   'category' : string,
 }
+export interface ProductResult {
+  'none' : null,
+  'error' : GenericError,
+  'product' : Product,
+}
+export interface ProductSerialNumber {
+  'updated_at' : bigint,
+  'updated_by' : Principal,
+  'product_id' : Principal,
+  'metadata' : Array<Metadata>,
+  'created_at' : bigint,
+  'created_by' : Principal,
+  'print_version' : number,
+  'user_serial_no' : string,
+  'serial_no' : Principal,
+}
+export type ProductSerialNumberResult = { 'result' : ProductSerialNumber } |
+  { 'error' : GenericError };
+export interface ProductVerification {
+  'id' : Principal,
+  'product_id' : Principal,
+  'metadata' : Array<Metadata>,
+  'created_at' : bigint,
+  'created_by' : Principal,
+  'print_version' : number,
+  'serial_no' : Principal,
+}
+export type ProductVerificationResult = {
+    'status' : ProductVerificationStatus
+  } |
+  { 'error' : GenericError };
+export type ProductVerificationStatus = { 'Invalid' : null } |
+  { 'MultipleVerification' : null } |
+  { 'FirstVerification' : null };
+export interface Reseller {
+  'id' : Principal,
+  'updated_at' : bigint,
+  'updated_by' : Principal,
+  'ecommerce_urls' : Array<Metadata>,
+  'metadata' : Array<Metadata>,
+  'name' : string,
+  'org_id' : Principal,
+  'date_joined' : bigint,
+  'created_at' : bigint,
+  'created_by' : Principal,
+  'reseller_id' : string,
+}
+export interface ResellerInput {
+  'ecommerce_urls' : Array<Metadata>,
+  'metadata' : Array<Metadata>,
+  'name' : string,
+  'org_id' : Principal,
+}
+export type ResellerVerificationResult = {
+    'result' : ResellerVerificationResultRecord
+  } |
+  { 'error' : GenericError };
+export interface ResellerVerificationResultRecord {
+  'status' : VerificationStatus,
+  'organization' : OrganizationPublic,
+  'registered_at' : [] | [bigint],
+}
+export type UniqueCodeResult = { 'error' : GenericError } |
+  { 'unique_code' : string };
 export interface User {
   'id' : Principal,
   'updated_at' : bigint,
   'updated_by' : Principal,
+  'user_role' : [] | [UserRole],
   'org_ids' : Array<Principal>,
   'is_principal' : boolean,
   'is_enabled' : boolean,
@@ -63,25 +144,74 @@ export interface UserDetailsInput {
   'last_name' : string,
   'phone_no' : string,
 }
-export type UserResult = { 'user' : [] | [User] } |
+export type UserResult = { 'none' : null } |
+  { 'user' : User } |
   { 'error' : GenericError };
+export type UserRole = { 'Reseller' : null } |
+  { 'Admin' : null } |
+  { 'BrandOwner' : null };
+export type VerificationStatus = { 'Invalid' : null } |
+  { 'Success' : null };
 export interface _SERVICE {
-  'create_organization' : ActorMethod<[OrganizationInput], Organization>,
-  'create_product' : ActorMethod<[ProductInput], Product>,
+  'create_organization' : ActorMethod<[OrganizationInput], OrganizationPublic>,
+  'create_product' : ActorMethod<[ProductInput], ProductResult>,
+  'create_product_serial_number' : ActorMethod<
+    [Principal, [] | [string]],
+    ProductSerialNumberResult
+  >,
   'create_user' : ActorMethod<[Principal, UserDetailsInput], UserResult>,
-  'get_organization_by_id' : ActorMethod<[Principal], [] | [Organization]>,
-  'get_product_by_id' : ActorMethod<[Principal], [] | [Product]>,
+  'find_organizations_by_name' : ActorMethod<
+    [string],
+    Array<OrganizationPublic>
+  >,
+  'find_resellers_by_name_or_id' : ActorMethod<[string], Array<Reseller>>,
+  'generate_reseller_unique_code' : ActorMethod<[Principal], UniqueCodeResult>,
+  'get_organization_by_id' : ActorMethod<[Principal], OrganizationPublic>,
+  'get_organization_private_key' : ActorMethod<[Principal], PrivateKeyResult>,
+  'get_product_by_id' : ActorMethod<[Principal], ProductResult>,
   'get_user_by_id' : ActorMethod<[Principal], [] | [User]>,
   'greet' : ActorMethod<[string], string>,
+  'list_product_serial_number' : ActorMethod<
+    [Principal, [] | [Principal]],
+    Array<ProductSerialNumber>
+  >,
+  'list_product_verifications' : ActorMethod<
+    [Principal, [] | [Principal], [] | [Principal]],
+    Array<ProductVerification>
+  >,
+  'list_product_verifications_by_user' : ActorMethod<
+    [Principal, [] | [Principal]],
+    Array<ProductVerification>
+  >,
+  'list_products' : ActorMethod<[Principal], Array<Product>>,
+  'print_product_serial_number' : ActorMethod<
+    [Principal, Principal],
+    UniqueCodeResult
+  >,
   'register' : ActorMethod<[], User>,
+  'register_as_organization' : ActorMethod<[OrganizationInput], UserResult>,
+  'register_as_reseller' : ActorMethod<[ResellerInput], UserResult>,
+  'set_self_role' : ActorMethod<[UserRole], UserResult>,
   'update_organization' : ActorMethod<
     [Principal, OrganizationInput],
-    Organization
+    OrganizationPublic
   >,
   'update_product' : ActorMethod<[Principal, ProductInput], Product>,
-  'update_self_details' : ActorMethod<[UserDetailsInput], User>,
+  'update_product_serial_number' : ActorMethod<
+    [Principal, Principal, [] | [string]],
+    ProductSerialNumberResult
+  >,
+  'update_self_details' : ActorMethod<[UserDetailsInput], UserResult>,
   'update_user' : ActorMethod<[Principal, UserDetailsInput], UserResult>,
   'update_user_orgs' : ActorMethod<[Principal, Array<Principal>], UserResult>,
+  'verify_product' : ActorMethod<
+    [Principal, Principal, string, Array<Metadata>],
+    ProductVerificationResult
+  >,
+  'verify_reseller' : ActorMethod<
+    [Principal, string],
+    ResellerVerificationResult
+  >,
   'whoami' : ActorMethod<[], [] | [User]>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;

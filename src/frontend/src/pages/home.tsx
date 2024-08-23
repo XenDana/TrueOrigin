@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom";
 import logo from "../assets/true-origin.png"
 import herobg from "../assets/true-origin-hero.png"
 import icLogo from "../assets/internet-computer-logo.png"
@@ -35,6 +36,7 @@ const landingCardData = [
 
 function Homepage() {
     const [isOpen, setIsOpen] = useState(false);
+    const navigate = useNavigate();
 
     const toggleMenu = () => {
         setIsOpen(!isOpen);
@@ -50,7 +52,7 @@ function Homepage() {
                             <a href="#" className="text-gray-600">Homepage</a>
                             <a href="#" className="text-gray-600">Brand Owners Dashboard</a>
                             <a href="#" className="text-gray-600">Resellers Dashboard</a>
-                            <a href="#" className="text-purple-600">Login</a>
+                            <a onClick={() => navigate('/auth/login')} className="text-purple-600">Login</a>
                         </div>
                         <button
                             className="md:hidden flex items-center text-gray-600"
@@ -197,7 +199,7 @@ function Homepage() {
                     </div>
                 </section>
                 <section className="flex p-20 justify-center">
-                    <img className="w-3/4 max-w-[1200px]" src={cFusion}/>
+                    <img className="w-3/4 max-w-[1200px]" src={cFusion} />
                 </section>
                 {/* <!-- Footer --> */}
                 <footer className="bg-gray-900 text-white py-6 mt-auto">

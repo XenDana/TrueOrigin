@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { AuthClient } from '@dfinity/auth-client';
+
 import {
   AuthContextInterface,
   AuthContextProviderProps,
 } from './interface';
 import { TrustOrigin_backend } from '../../../../declarations/TrustOrigin_backend';
-import type { User, UserDetailsInput } from '../../../../declarations/TrustOrigin_backend/TrustOrigin_backend.did';
-import { AuthClient } from '@dfinity/auth-client';
+import type { User, UserDetailsInput, UserRole } from '../../../../declarations/TrustOrigin_backend/TrustOrigin_backend.did';
+import { handleUserResult } from '../../utils';
 
 const AuthContext = createContext({} as AuthContextInterface);
 
@@ -57,8 +59,10 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({childre
 
     const responseData = await TrustOrigin_backend.register();
     if (input.first_name) { // only fill in the user details, if the user chooses to do so
-        const profile = await TrustOrigin_backend.update_self_details(input as UserDetailsInput)
-        setProfile(profile);
+        const result = handleUserResult(await TrustOrigin_backend.update_self_details(input as UserDetailsInput))
+        if (result) {
+          setProfile(result);
+        }
     } else {
         setProfile(responseData);
     }
@@ -67,9 +71,18 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({childre
   const updateProfile = useCallback(async (input: UserDetailsInput) => {
     if (!authClient || !input.first_name) return;
 
-    const profile = await TrustOrigin_backend.update_self_details(input)
-    setProfile(profile);
+    const result = handleUserResult(await TrustOrigin_backend.update_self_details(input as UserDetailsInput))
+    if (result) {
+      setProfile(result);
+    }
   }, [authClient]);
+
+  const setSelfRole = useCallback(async (userRole: UserRole) => {
+    const result = handleUserResult(await TrustOrigin_backend.set_self_role(userRole));
+    if (result) {
+      setProfile(result);
+    }
+  }, [])
 
   const logout = useCallback(() => {
     if (!authClient) return;
@@ -102,6 +115,7 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({childre
     isAuthenticated,
     createProfile,
     updateProfile,
+    setSelfRole,
     login,
     logout,
   };

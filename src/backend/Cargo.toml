@@ -10,8 +10,9 @@ crate-type = ["cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-serde = "1.0"
+serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
+serde_json = "=1.0.1"
 time = { version = "0.3", features = ["macros"] }
 candid = "0.10"
 ic-cdk = "0.13"
@@ -19,4 +20,7 @@ ic-cdk-timers = "0.7" # Feel free to remove this dependency if you don't need ti
 ic-stable-structures = "0.6.5"
 lazy_static = "1.4.0"
 sha2 = "0.10"
-solana-program = "2.0.5"
+rand = "0.8.5"
+hex = "0.4.3"
+k256 = "0.13.3"
+getrandom = { version = "0.2", features = ["custom"] }
