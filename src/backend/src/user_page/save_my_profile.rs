@@ -28,8 +28,8 @@ async fn save_my_profile(name: String) -> Result<User, String> {
         user_details
     );
     match user_result {
-        UserResult::User(Some(user)) => Ok(user),
-        UserResult::User(None) => Err("User not found".to_string()),
+        UserResult::User(user) => Ok(user),
+        UserResult::None => Err("User not found".to_string()),
         UserResult::Err(err) => Err(format!("Error: {:?}", err)),
     }
 
