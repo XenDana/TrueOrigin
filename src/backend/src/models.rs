@@ -276,6 +276,7 @@ impl Storable for User {
         max_size: MAX_VALUE_SIZE,
         is_fixed_size: false,
     };
+}
 
 impl Default for User {
     fn default() -> Self {
@@ -289,6 +290,7 @@ impl Default for User {
             last_name: None,
             phone_no: None,
             email: None,
+            address: None,
             detail_meta: Vec::new(),
             created_at: api::time(),
             created_by: api::caller(), // Default value for Principal

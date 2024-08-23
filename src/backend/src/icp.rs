@@ -80,24 +80,26 @@ pub fn update_organization(id: Principal, input: OrganizationInput) -> Organizat
     }
 }
 
-impl Default for User {
-    fn default() -> Self {
-        User {
-            id: api::caller(),
-            org_ids: Vec::new(),
-            is_principal: false,
-            is_enabled: true,
-            first_name: None,
-            last_name: None,
-            phone_no: None,
-            email: None,
-            address: None,
-            detail_meta: Vec::new(),
-            created_at: api::time(),
-            created_by: api::caller(), // Default value for Principal
-            updated_at: api::time(),
-            updated_by: api::caller(), // Default value for Principal
-        }
+// impl Default for User {
+//     fn default() -> Self {
+//         User {
+//             id: api::caller(),
+//             org_ids: Vec::new(),
+//             is_principal: false,
+//             is_enabled: true,
+//             first_name: None,
+//             last_name: None,
+//             phone_no: None,
+//             email: None,
+//             address: None,
+//             detail_meta: Vec::new(),
+//             created_at: api::time(),
+//             created_by: api::caller(), // Default value for Principal
+//             updated_at: api::time(),
+//             updated_by: api::caller(), // Default value for Principal
+//         }
+//     }
+// }
 
 #[query]
 pub fn get_organization_private_key(org_id: Principal) -> PrivateKeyResult {
@@ -394,7 +396,7 @@ pub fn create_user(id: Principal, input: UserDetailsInput) -> UserResult {
     ic_cdk::print(std::format!("User: {:?}", user.id.to_text()));
     
     users.insert(id, user.clone());
-    UserResult::User(user)
+    UserResult::User(Some(user))
 }
 
 #[update]
