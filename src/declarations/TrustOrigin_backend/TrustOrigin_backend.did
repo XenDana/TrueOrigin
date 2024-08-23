@@ -213,6 +213,7 @@ service : {
     "update_user": (id: principal, input: UserDetailsInput) -> (UserResult);
     "update_user_orgs": (id: principal, org_ids: vec principal) -> (UserResult);
     "greet" : (text) -> (text) query;
+    "generate_product_review": (product_id: principal) -> (opt Product);
     "find_resellers_by_name_or_id": (text) -> (vec Reseller) query;
     "verify_reseller": (reseller_id: principal, public_key: text) -> (ResellerVerificationResult) query;
     "generate_reseller_unique_code": (reseller_id: principal) -> (UniqueCodeResult) query;

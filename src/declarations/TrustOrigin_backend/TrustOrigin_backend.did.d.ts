@@ -165,6 +165,7 @@ export interface _SERVICE {
     Array<OrganizationPublic>
   >,
   'find_resellers_by_name_or_id' : ActorMethod<[string], Array<Reseller>>,
+  'generate_product_review' : ActorMethod<[Principal], [] | [Product]>,
   'generate_reseller_unique_code' : ActorMethod<[Principal], UniqueCodeResult>,
   'get_organization_by_id' : ActorMethod<[Principal], OrganizationPublic>,
   'get_organization_private_key' : ActorMethod<[Principal], PrivateKeyResult>,

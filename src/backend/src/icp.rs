@@ -27,7 +27,6 @@ use ic_cdk::api::management_canister::http_request::{
     TransformContext, TransformFunc,
 };
 
-use serde::{Serialize, Deserialize};
 use serde_json::{self, Value};
 
 
@@ -45,7 +44,7 @@ pub fn get_organization_by_id(id: Principal) -> OrganizationResult {
 
 #[update]
 pub fn create_organization(input: OrganizationInput) -> OrganizationPublic {
-    let id = Principal::anonymous(); // Generate a unique ID for the organization
+    let id = generate_unique_principal(Principal::anonymous()); // Generate a unique ID for the organization
     // Generate ECDSA keys for demonstration
     let mut rng = StdRng::from_entropy();
     let signing_key = SigningKey::random(&mut rng);
@@ -266,11 +265,15 @@ pub fn register_as_organization(input: OrganizationInput) -> UserResult {
     let signing_key = SigningKey::random(&mut rng);
     let signing_key_str = hex::encode(&signing_key.to_bytes());
 
-    user_mut.user_role = Some(UserRole::Reseller);
+    user_mut.user_role = Some(UserRole::BrandOwner);
     user_mut.updated_at = api::time();
     user_mut.updated_by = api::caller();
 
+    let org_id = generate_unique_principal(Principal::anonymous());
+    user_mut.org_ids.push(org_id);
+
     let organization = Organization {
+        id: org_id,
         name: input.name,
         description: input.description,
         metadata: input.metadata,
@@ -324,7 +327,7 @@ pub fn register_as_reseller(input: ResellerInput) -> UserResult {
         })
     }
     let public_key = private_key.unwrap().public_key();
-    let reseller_id = Principal::anonymous();
+    let reseller_id = generate_unique_principal(Principal::anonymous());
 
     user_mut.user_role = Some(UserRole::Reseller);
     user_mut.updated_at = api::time();

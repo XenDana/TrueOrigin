@@ -2,16 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 
 import techImage from '../assets/tech.png';
 import { useAuthContext } from '../contexts/useAuthContext';
-import { useNavigate } from 'react-router-dom';
 import { AddProductLogo, BrandOwnerLogo, HeatmapLogo, ResellerLogo, UserLogo } from '../components/SidebarLogo';
 import Sidebar from '../components/Sidebar';
 import Filters from '../components/Filters';
 import Table from '../components/Table';
 
 const Dashboard = () => {
-    const navigate = useNavigate();
-    const { profile, isAuthenticated } = useAuthContext();
-    const [activeMenu, setActiveMenu] = useState<String>('Brand Owners Dashboard');
+    const [activeMenu, setActiveMenu] = useState('Brand Owners Dashboard');
+    const { profile } = useAuthContext();
 
     const username = useMemo(() => {
         if (!profile) {
@@ -29,7 +27,7 @@ const Dashboard = () => {
     //     return <></>
     // }
 
-    const handleSidebarClick = (menu: String) => {
+    const handleSidebarClick = (menu: typeof activeMenu) => {
         setActiveMenu(menu);
     }
     
