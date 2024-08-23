@@ -9,6 +9,7 @@ import { useAccount } from "wagmi";
 import { useChainId } from "wagmi";
 import { useEffect } from "react";
 import { useSiweIdentity } from "ic-use-siwe-identity";
+import logo from '../../assets/true-origin.png';
 // import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export default function LoginPage(): React.ReactElement {
@@ -59,7 +60,7 @@ export default function LoginPage(): React.ReactElement {
         <img alt="siwe" className="w-20 h-20 md:w-28 md:h-28" src="/siwe.svg" />
       </div>
       <div className="px-10 text-2xl font-bold text-center md:text-5xl">
-        Internet Computer + React + Sign In With Ethereum
+        <img src={logo} />
       </div>
       {/* <div className="px-3 py-1 mt-5 text-sm rounded-full bg-zinc-700">
         <FontAwesomeIcon className="mr-2" icon={faScroll} />

@@ -1,7 +1,15 @@
 import logo from "../assets/true-origin.png"
 import coinGrantedImage from '../assets/coin-granted.png'
 
-const MobileCoinGranted: React.FC = () => {
+interface MobileCoinGranted {
+  backToHomeFunc: Function; // Optional prop
+}
+
+const MobileCoinGranted: React.FC<MobileCoinGranted> = ({ backToHomeFunc }) => {
+  const handleClick = () => {
+    backToHomeFunc('scan');
+  }
+
     return (
         <div className="flex justify-center items-center min-h-screen p-4">
           <div className="w-full max-w-md p-6 rounded-lg shadow-md text-center">
@@ -23,7 +31,7 @@ const MobileCoinGranted: React.FC = () => {
             <p className="text-gray-600 mb-6">Happy Shopping!</p>
             
             {/* CTA Button */}
-            <button className="bg-green-500 text-white px-6 py-3 rounded-full hover:bg-green-600 transition">
+            <button className="bg-green-500 text-white px-6 py-3 rounded-full hover:bg-green-600 transition" onClick={handleClick}>
               Back to Home &rarr;
             </button>
           </div>

@@ -1,12 +1,13 @@
 import EthButton from "./EthButton";
 import IdentityButton from "./IdentityButton";
 import SessionButton from "./SessionButton";
+import Logo from '../../assets/true-origin.png'
 
 export default function Header() {
   return (
     <div className="flex flex-col justify-between w-full gap-10 p-5 md:flex-row">
       <div className="hidden text-xl font-bold text-center md:block">
-        Internet Computer + React + Sign In With Ethereum
+        <img src={Logo} />
       </div>
       <div className="flex flex-col items-center justify-center gap-5 text-sm md:text-base md:flex-row">
         <IdentityButton />
@@ -14,7 +15,7 @@ export default function Header() {
         <SessionButton />
       </div>
       <div className="block text-xl font-bold text-center md:hidden">
-        Internet Computer + React + Sign In With Ethereum
+        <img src={Logo} />
       </div>
     </div>
   );

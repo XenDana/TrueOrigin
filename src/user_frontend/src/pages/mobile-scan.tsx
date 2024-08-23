@@ -12,6 +12,7 @@ const Mobile: React.FC<MobileProps> = ({ scanResultFunc }) => {
     const [scanResult, setScanResult] = useState<string>('');
 
     const handleScan = (data: any) => {
+        console.log("data scanned ", data);
         if (data && data.text) {
             if (data.text !== '') {
                 setScanResult(data.text);
