@@ -1,6 +1,3 @@
-import React from 'react';
-import { useState } from 'react';
-
 import logo from "../assets/true-origin.png"
 import coinGrantedImage from '../assets/coin-granted.png'
 

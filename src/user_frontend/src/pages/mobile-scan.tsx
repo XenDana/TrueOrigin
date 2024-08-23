@@ -1,7 +1,6 @@
-import React from 'react';
 import { useState } from 'react';
 
-import { QrReader } from 'react-qr-reader';
+import QrReader from 'react-qr-reader';
 
 import logo from "../assets/true-origin.png"
 
@@ -32,7 +31,7 @@ const Mobile = () => {
                         {scanResult == '' && <QrReader
                             delay={300}
                             onError={handleError}
-                            onResult={handleScan}
+                            onScan={handleScan}
                             style={{ width: '100%' }}
                         />}
                     </div>
