@@ -244,7 +244,7 @@ pub fn authorize_for_product(
     };
     
     // Log access control action for debugging
-    ic_cdk::print(format!("Access granted: {} for {:?} on org {}", caller, permission, org_id));
+    ic_cdk::print(format!("Access granted: {} for {:?} on product {}", user_id, permission, product_id));
     
     Ok(())
 }

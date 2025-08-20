@@ -4,6 +4,7 @@ use sha2::{Sha256, Digest};
 use std::time::Duration;
 use futures::channel::oneshot;
 use ic_cdk_timers::set_timer;
+use email_address::EmailAddress;
 
 
 pub fn generate_unique_principal(principal: Principal) -> Principal {
@@ -38,13 +39,18 @@ pub async fn async_delay(duration: Duration) {
     }
 }
 
-/// Validates email format with basic checks
-/// Returns true if email contains @ symbol, dot, and minimum length requirements
+/// Validates email format using RFC 5322 compliance
+/// Returns true if email is valid according to email standards
+/// 
+/// # Examples
+/// ```
+/// assert!(validate_email("user@domain.com"));
+/// assert!(validate_email("test+tag@example.org"));
+/// assert!(!validate_email("a@."));
+/// assert!(!validate_email("invalid.email"));
+/// ```
 pub fn validate_email(email: &str) -> bool {
-    if email.is_empty() {
-        return false;
-    }
-    email.contains('@') && email.contains('.') && email.len() > 5
+    EmailAddress::parse_with_options(email, email_address::Options::default()).is_ok()
 }
 
 /// Validates string is not empty or just whitespace
@@ -55,5 +61,78 @@ pub fn validate_non_empty_string(input: &str) -> bool {
 /// Formats a timestamp into a human-readable string for debugging
 pub fn format_timestamp(timestamp: u64) -> String {
     format!("{}ns", timestamp)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_email_valid_emails() {
+        // Standard email formats
+        assert!(validate_email("user@domain.com"));
+        assert!(validate_email("test@example.org"));
+        assert!(validate_email("admin@company.net"));
+        
+        // Email with plus sign (common for tagging)
+        assert!(validate_email("test+tag@example.org"));
+        
+        // Email with dots in local part
+        assert!(validate_email("first.last@example.com"));
+        
+        // Email with numbers
+        assert!(validate_email("user123@domain456.com"));
+        
+        // Email with hyphens in domain
+        assert!(validate_email("user@my-domain.com"));
+    }
+
+    #[test]
+    fn test_validate_email_invalid_emails() {
+        // Empty string
+        assert!(!validate_email(""));
+        
+        // Missing @ symbol
+        assert!(!validate_email("invalid.email"));
+        assert!(!validate_email("user.domain.com"));
+        
+        // Missing domain
+        assert!(!validate_email("user@"));
+        
+        // Missing local part
+        assert!(!validate_email("@domain.com"));
+        
+        // Invalid domain endings
+        assert!(!validate_email("a@."));
+        assert!(!validate_email("user@domain."));
+        
+        // Invalid characters/format
+        assert!(!validate_email(".@A"));
+        assert!(!validate_email("@@"));
+        assert!(!validate_email("user@@domain.com"));
+        
+        // Just symbols
+        assert!(!validate_email("@"));
+        assert!(!validate_email("."));
+        
+        // Spaces (not allowed in email)
+        assert!(!validate_email("user @domain.com"));
+        assert!(!validate_email("user@ domain.com"));
+    }
+
+    #[test]
+    fn test_validate_non_empty_string() {
+        assert!(validate_non_empty_string("valid string"));
+        assert!(validate_non_empty_string("a"));
+        assert!(!validate_non_empty_string(""));
+        assert!(!validate_non_empty_string("   "));
+        assert!(!validate_non_empty_string("\t\n"));
+    }
+
+    #[test]
+    fn test_format_timestamp() {
+        assert_eq!(format_timestamp(1234567890), "1234567890ns");
+        assert_eq!(format_timestamp(0), "0ns");
+    }
 }
 
