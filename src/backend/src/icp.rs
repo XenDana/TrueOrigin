@@ -52,6 +52,7 @@ use crate::api::{
 use crate::rate_limiter;
 use crate::rewards;
 use crate::utils;
+use crate::constants::{MAX_METADATA_ITEMS, MAX_ECOMMERCE_URLS};
 
 #[query]
 pub fn get_organization_by_id(id: Principal) -> OrganizationResult {
@@ -687,11 +688,15 @@ pub fn register_as_reseller_v2(input: ResellerInput) -> ApiResponse<UserResponse
         return ApiResponse::error(ApiError::invalid_input("Reseller name cannot be empty"));
     }
     // Validate metadata and ecommerce URLs length
-    if input.metadata.len() > 20 {
-        return ApiResponse::error(ApiError::invalid_input("Too many metadata items"));
+    if input.metadata.len() > MAX_METADATA_ITEMS {
+        return ApiResponse::error(ApiError::invalid_input(
+            &format!("Too many metadata items (max: {})", MAX_METADATA_ITEMS)
+        ));
     }
-    if input.ecommerce_urls.len() > 10 {
-        return ApiResponse::error(ApiError::invalid_input("Too many ecommerce URLs"));
+    if input.ecommerce_urls.len() > MAX_ECOMMERCE_URLS {
+        return ApiResponse::error(ApiError::invalid_input(
+            &format!("Too many ecommerce URLs (max: {})", MAX_ECOMMERCE_URLS)
+        ));
     }
 
     // --- 2. User Checks ---
