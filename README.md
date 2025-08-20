@@ -7,6 +7,10 @@
 Update Logs - 15.48 - Readme.MD (Upload Demo Video)
 
 # TrueOrigin - ChainFusion HackerHouse - xChain Track
+
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/XenDana/TrueOrigin)
+[![ICP](https://img.shields.io/badge/ICP-Blockchain-blue.svg)](https://internetcomputer.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 ## Overview
 TrueOrigin is an innovative anti-counterfeit system built on the Internet Computer Protocol (ICP), serving Brand Owners, Resellers, and Users. It leverages ICP's cross-chain capabilities, ECDSA for Product & Reseller Certification, and HTTPS outcalls for AI-Assisted product sentiment analysis and ETH transactions for Customer's QR Validation incentives.
 
@@ -91,9 +95,10 @@ dfx canister --help
 ## Running the project locally
 
 ### Prerequisites
-- Rust
-- DFX
-- Node JS
+- [Rust](https://rustup.rs/) (latest stable version)
+- [DFX](https://internetcomputer.org/docs/current/developer-docs/setup/install/) (version 0.15.0 or higher)
+- [Node.js](https://nodejs.org/) (version 18 or higher)
+- [pnpm](https://pnpm.io/) (for package management)
 
 ### Steps
 If you want to test your project locally, you can use the following commands:
@@ -102,8 +107,11 @@ If you want to test your project locally, you can use the following commands:
 # Starts the replica, running in the background
 dfx start --background
 
-# install node dependencies
+# Install node dependencies
 pnpm install
+
+# Add WASM target for Rust compilation
+rustup target add wasm32-unknown-unknown
 
 # Deploys your canisters to the replica and generates your candid interface
 dfx deploy
