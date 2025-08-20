@@ -31,13 +31,14 @@ services:
     volumes:
       - .:/app
     working_dir: /app
-    command: bash -c "
+    command: >
+      bash -c "
       echo 'Testing build...' &&
       echo 'Installing dependencies...' &&
       pnpm install &&
       echo 'Testing backend compilation...' &&
       dfx build TrustOrigin_backend --check &&
       echo 'Build test completed successfully!'
-    "
+      "
     profiles:
       - build-test
