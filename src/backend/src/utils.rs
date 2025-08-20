@@ -5,8 +5,6 @@ use std::time::Duration;
 use futures::channel::oneshot;
 use ic_cdk_timers::set_timer;
 
-use crate::constants::*;
-
 
 pub fn generate_unique_principal(principal: Principal) -> Principal {
     // Combine the principal text and the current time
