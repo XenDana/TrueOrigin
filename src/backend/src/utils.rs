@@ -39,6 +39,7 @@ pub async fn async_delay(duration: Duration) {
 }
 
 /// Validates email format with basic checks
+/// Returns true if email contains @ symbol, dot, and minimum length requirements
 pub fn validate_email(email: &str) -> bool {
     if email.is_empty() {
         return false;
