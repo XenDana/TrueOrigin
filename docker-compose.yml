@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Development environment with all tools pre-installed
   trueorigin-dev:
     build:
       context: .
@@ -21,7 +22,7 @@ services:
     stdin_open: true
     tty: true
 
-  # Service for running builds
+  # Build testing service for CI/CD
   build-test:
     build:
       context: .
