@@ -43,9 +43,9 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Add wasm target for ICP
 RUN rustup target add wasm32-unknown-unknown
 
-# Install DFX
-RUN sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
-ENV PATH="/root/bin:${PATH}"
+# Install DFX non-interactively
+RUN DFXVM_INIT_YES=true sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
+ENV PATH="/root/.local/share/dfx/bin:${PATH}"
 
 WORKDIR /app
 
