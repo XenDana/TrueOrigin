@@ -5,6 +5,8 @@ use std::time::Duration;
 use futures::channel::oneshot;
 use ic_cdk_timers::set_timer;
 
+use crate::constants::*;
+
 
 pub fn generate_unique_principal(principal: Principal) -> Principal {
     // Combine the principal text and the current time
@@ -36,5 +38,13 @@ pub async fn async_delay(duration: Duration) {
             ic_cdk::print(format!("❌ ERROR: Timer future cancelled: {:?}", e));
         }
     }
+}
+
+/// Validates email format with basic checks
+pub fn validate_email(email: &str) -> bool {
+    if email.is_empty() {
+        return false;
+    }
+    email.contains('@') && email.contains('.') && email.len() > 5
 }
 
