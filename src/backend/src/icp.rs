@@ -3229,5 +3229,5 @@ pub fn get_organization_analytic(request: GetOrganizationAnalyticRequest) -> Api
 
 #[query]
 pub fn health_check() -> String {
-    format!("TrueOrigin Backend - Status: OK - Time: {}", api::time())
+    format!("TrueOrigin Backend v1.0 - Status: OK - Time: {}", api::time())
 }
