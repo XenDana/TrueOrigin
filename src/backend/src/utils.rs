@@ -53,7 +53,8 @@ pub fn validate_email(email: &str) -> bool {
     match validate_email_with_reason(email) {
         Ok(_) => true,
         Err(err) => {
-            // Log the validation failure for debugging
+            // Only log in canister environment (not during tests)
+            #[cfg(not(test))]
             ic_cdk::print(format!("Email validation failed for '{}': {}", email, err));
             false
         }
