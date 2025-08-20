@@ -50,7 +50,7 @@ pub async fn async_delay(duration: Duration) {
 /// assert!(!validate_email("invalid.email"));
 /// ```
 pub fn validate_email(email: &str) -> bool {
-    EmailAddress::parse_with_options(email, email_address::Options::default()).is_ok()
+    email.parse::<EmailAddress>().is_ok()
 }
 
 /// Validates string is not empty or just whitespace
