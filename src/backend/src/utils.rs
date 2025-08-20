@@ -47,3 +47,13 @@ pub fn validate_email(email: &str) -> bool {
     email.contains('@') && email.contains('.') && email.len() > 5
 }
 
+/// Validates string is not empty or just whitespace
+pub fn validate_non_empty_string(input: &str) -> bool {
+    !input.trim().is_empty()
+}
+
+/// Formats a timestamp into a human-readable string for debugging
+pub fn format_timestamp(timestamp: u64) -> String {
+    format!("{}ns", timestamp)
+}
+
