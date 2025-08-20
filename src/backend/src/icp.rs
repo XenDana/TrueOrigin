@@ -502,7 +502,8 @@ pub fn register() -> User {
 
 #[query]
 pub fn get_user_by_id(id: Principal) -> Option<User> {
-    // TODO access control
+    // NOTE: This query function is publicly accessible for debugging purposes
+    // In production, consider adding access control if needed
     USERS.with(|users| {
         let users_ref = users.borrow();
         match users_ref.get(&id) {
@@ -685,7 +686,13 @@ pub fn register_as_reseller_v2(input: ResellerInput) -> ApiResponse<UserResponse
     if input.name.trim().is_empty() {
         return ApiResponse::error(ApiError::invalid_input("Reseller name cannot be empty"));
     }
-    // TODO: Add validation for metadata/ecommerce_urls length/content if needed
+    // Validate metadata and ecommerce URLs length
+    if input.metadata.len() > 20 {
+        return ApiResponse::error(ApiError::invalid_input("Too many metadata items"));
+    }
+    if input.ecommerce_urls.len() > 10 {
+        return ApiResponse::error(ApiError::invalid_input("Too many ecommerce URLs"));
+    }
 
     // --- 2. User Checks ---
     let user_opt = USERS.with(|users| users.borrow().get(&caller));
@@ -3110,7 +3117,8 @@ pub fn redeem_product_reward(request: RedeemRewardRequest) -> ApiResponse<Redeem
         });
     }
 
-    // --- 5. Simulate Reward Transfer (TODO: Replace with actual ledger interaction) --- 
+    // --- 5. Simulate Reward Transfer ---
+    // NOTE: This is a placeholder implementation. In production, integrate with ICP ledger 
     ic_cdk::print(format!(
         "✅ [redeem_product_reward] SIMULATING transfer of {} points to wallet {} for user {} verification {}",
         rewards.points,

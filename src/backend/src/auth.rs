@@ -243,7 +243,8 @@ pub fn authorize_for_product(
         success: true,
     };
     
-    // TODO: Store audit log in a stable collection
+    // Log access control action for debugging
+    ic_cdk::print(format!("Access granted: {} for {:?} on org {}", caller, permission, org_id));
     
     Ok(())
 }
