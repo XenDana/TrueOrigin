@@ -3226,3 +3226,8 @@ pub fn get_organization_analytic(request: GetOrganizationAnalyticRequest) -> Api
         Err(e) => ApiResponse::error(e),
     }
 }
+
+#[query]
+pub fn health_check() -> String {
+    format!("TrueOrigin Backend - Status: OK - Time: {}", api::time())
+}
