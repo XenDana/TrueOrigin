@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Development environment with all tools pre-installed
+  trueorigin-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: trueorigin-dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/src/frontend/node_modules
+    ports:
+      - "4943:4943"  # DFX local replica
+      - "8080:8080"  # Frontend dev server
+    environment:
+      - NODE_ENV=development
+    working_dir: /app
+    command: bash -c "echo 'TrueOrigin development environment ready!' && tail -f /dev/null"
+    stdin_open: true
+    tty: true
+
+  # Build testing service for CI/CD
+  build-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: trueorigin-build-test
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      bash -c "
+      echo 'Testing build...' &&
+      echo 'Installing dependencies...' &&
+      pnpm install &&
+      echo 'Testing backend compilation...' &&
+      dfx build TrustOrigin_backend --check &&
+      echo 'Build test completed successfully!'
+      "
+    profiles:
+      - build-test

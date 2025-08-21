@@ -7,6 +7,7 @@ pub mod auth;
 pub mod api;
 pub mod rate_limiter;
 pub mod rewards;
+pub mod constants;
 
 use crate::api::*;
 use crate::error::ApiError;
